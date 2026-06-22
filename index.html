@@ -225,7 +225,7 @@
 
         .tabs-container {
             position: sticky;
-            top: calc(var(--header-h) + var(--banner-h));
+            top: var(--header-h);
             z-index: 90;
             margin: 0 0 0;
             padding: 14px 0 0;
@@ -881,9 +881,8 @@
 
         /* ── Zalo group banner (hoantien.dev) ── */
         .zalo-banner {
-            position: sticky;
-            top: var(--header-h);
-            z-index: 95;
+            position: relative;
+            z-index: 1;
             background: linear-gradient(90deg, rgba(0, 104, 255, 0.1) 0%, rgba(0, 104, 255, 0.04) 100%);
             border-bottom: 1px solid color-mix(in srgb, #0068ff 28%, var(--border));
             margin-bottom: 2px;
