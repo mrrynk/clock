@@ -1353,7 +1353,7 @@
                         </div>
                         <button id="apply-size">Áp dụng kích thước</button>
                     </div>
-                    <div class="control-group" id="rotate-controls1">
+                    <div class="control-group" id="rotate-controls">
                         <h3>Xoay phần tử</h3>
                         <div class="rotate-controls">
                             <input type="range" id="rotation-input" min="0" max="360" value="0" step="1">
@@ -1410,7 +1410,7 @@
                     <div class="panel-subtitle">Bảng màu, font và kiểu chữ</div>
                 </div>
             </div>
-            <div class="control-group">
+            <div class="control-group" id="text-controls">
                 <h3>Chọn màu</h3>
                 <div class="color-palette">
                     <div class="color-option selected" data-color="#ffffff" style="background-color:#ffffff;border:1px solid #ccc;"></div>
@@ -4281,9 +4281,9 @@ function loadBuiltInBackground(templateId, url) {
                 }
                 state.elements.push(makeQrBankText(textX, Math.min(textY, ch - margin), 'Quét mã để chuyển khoản', hintSize, { color: '#8f897c' }));
                 renderElements();
-                sizeControls.classList.remove('show');
-                shapeParams.classList.remove('show');
-                textControls.style.display = 'none';
+                if (sizeControls) sizeControls.classList.remove('show');
+                if (shapeParams) shapeParams.classList.remove('show');
+                if (textControls) textControls.style.display = 'none';
                 if (typeof addLog === 'function') {
                     addLog('Đã áp dụng mẫu QR Bank lên canvas');
                 }
@@ -4314,6 +4314,7 @@ function loadBuiltInBackground(templateId, url) {
                 imageTemplates.appendChild(previewItem);
                 state.selectedImageTemplate = qrIconId;
                 elementTypeSelect.value = 'image';
+                if (textControls) textControls.style.display = 'none';
                 alert('Đã tạo QR — có thể thêm thủ công bằng "Thêm phần tử" hoặc bấm "Áp dụng mẫu QR Bank".');
             } catch (error) {
                 alert('Không tạo được QR: ' + error.message);
