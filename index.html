@@ -232,6 +232,106 @@
             background: linear-gradient(to bottom, var(--bg-base) 75%, transparent);
         }
 
+        .mode-switch-bar {
+            display: flex;
+            justify-content: center;
+            padding: 0 0 10px;
+        }
+
+        .mode-switch {
+            display: inline-flex;
+            gap: 4px;
+            padding: 4px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: 999px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .mode-switch-btn {
+            border: none;
+            border-radius: 999px;
+            padding: 8px 18px;
+            font-family: inherit;
+            font-size: 0.82rem;
+            font-weight: 800;
+            cursor: pointer;
+            background: transparent;
+            color: var(--text-muted);
+            transition: background var(--transition), color var(--transition);
+            min-height: 40px;
+        }
+
+        .mode-switch-btn:hover { color: var(--text-primary); background: var(--bg-surface); }
+        .mode-switch-btn.active {
+            background: var(--accent-dim);
+            color: var(--accent);
+        }
+
+        .app-mode-basic .advanced-only { display: none !important; }
+        .app-mode-basic .tabs-container { display: none; }
+        .app-mode-basic #tab-settings { display: block !important; }
+        .app-mode-basic .basic-mode-desc { display: block; }
+        .app-mode-advanced .basic-mode-desc { display: none; }
+
+        .basic-mode-desc {
+            display: none;
+            margin: 0 0 14px;
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            background: var(--accent-dim);
+            border: 1px solid var(--border-subtle);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .panel-functions .form-row { margin-bottom: 12px; }
+        .panel-functions-time-row {
+            align-items: center;
+            flex-wrap: nowrap;
+            gap: 8px;
+        }
+        .panel-functions-time-row #time-setter {
+            flex: 0 0 auto;
+            min-width: 0;
+            white-space: nowrap;
+        }
+        .current-time-display {
+            flex: 1 1 auto;
+            min-width: 0;
+            font-family: 'JetBrains Mono', ui-monospace, monospace;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding: 0 4px;
+        }
+        .timezone-compact {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            flex: 0 0 auto;
+            margin: 0;
+        }
+        .timezone-compact label {
+            margin: 0;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+        .timezone-compact #hour-offset {
+            width: 3.25rem;
+            min-width: 3.25rem;
+            max-width: 3.25rem;
+            padding: 8px 4px;
+            text-align: center;
+            flex: 0 0 auto;
+        }
+        .panel-functions-modes { grid-template-columns: repeat(2, 1fr); }
+
         .tab-buttons {
             display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
             padding: 4px;
@@ -979,14 +1079,20 @@
             <a class="zalo-banner-btn" href="https://zalo.me/g/gosfwazgduxuvxc6w0rm" target="_blank" rel="noopener noreferrer">Tham gia nhóm →</a>
         </div>
     </aside>
-    <div class="app-main app-shell">
+    <div class="app-main app-shell app-mode-basic">
     <div class="content">
-    <div class="tabs-container">
+    <div class="mode-switch-bar">
+        <div class="mode-switch" role="group" aria-label="Chế độ giao diện">
+            <button type="button" class="mode-switch-btn active" data-app-mode="basic">Basic</button>
+            <button type="button" class="mode-switch-btn" data-app-mode="advanced">Nâng cao</button>
+        </div>
+    </div>
+    <div class="tabs-container advanced-only">
         <div class="tab-buttons">
             <button class="tab-button active" data-tab="tab-settings"><span class="tab-icon" aria-hidden="true">⚙</span><span class="tab-label">Cài đặt E-Paper</span></button>
-            <button class="tab-button" data-tab="tab-countdown"><span class="tab-icon" aria-hidden="true">⏳</span><span class="tab-label">Đếm ngược</span></button>
-            <button class="tab-button" data-tab="tab-image"><span class="tab-icon" aria-hidden="true">🖼</span><span class="tab-label">Truyền hình ảnh</span></button>
-            <button class="tab-button" data-tab="tab-editor"><span class="tab-icon" aria-hidden="true">✎</span><span class="tab-label">Thiết kế mẫu</span></button>
+            <button class="tab-button advanced-only" data-tab="tab-countdown"><span class="tab-icon" aria-hidden="true">⏳</span><span class="tab-label">Đếm ngược</span></button>
+            <button class="tab-button advanced-only" data-tab="tab-image"><span class="tab-icon" aria-hidden="true">🖼</span><span class="tab-label">Truyền hình ảnh</span></button>
+            <button class="tab-button advanced-only" data-tab="tab-editor"><span class="tab-icon" aria-hidden="true">✎</span><span class="tab-label">Thiết kế mẫu</span></button>
         </div>
     </div>
 
@@ -994,6 +1100,7 @@
     <div id="tab-settings" class="tab-content active">
         <h2 class="page-title">Cài đặt E-Paper</h2>
         <p class="page-desc">Kết nối thiết bị qua Bluetooth trước khi gửi lệnh điều khiển đồng hồ hoặc màn hình.</p>
+        <p class="basic-mode-desc">Chế độ <strong>Basic</strong> — kết nối Bluetooth và dùng <strong>Chức năng</strong> để đồng bộ giờ, đổi màn hình. Chuyển sang <strong>Nâng cao</strong> để mở đầy đủ tính năng.</p>
 
         <section class="panel">
             <div class="panel-header">
@@ -1009,38 +1116,49 @@
             </div>
         </section>
 
-        <section class="panel">
+        <section class="panel panel-functions">
             <div class="panel-header">
-                <div class="panel-icon" aria-hidden="true">🕐</div>
+                <div class="panel-icon" aria-hidden="true">⚡</div>
                 <div>
-                    <div class="panel-title">Đồng hồ &amp; chế độ hiển thị</div>
+                    <div class="panel-title">Chức năng</div>
+                    <div class="panel-subtitle">Đồng bộ giờ và đổi chế độ màn hình</div>
                 </div>
             </div>
-            <div class="form-row">
-                <button id="time-setter" class="ble-action" onclick="setTime()">Đặt giờ</button>
-                <div class="inline-field">
-                    <label for="hour-offset">Múi giờ (offset giờ)</label>
-                    <input type="number" max="24" min="0" id="hour-offset" value="7">
+            <div class="form-row panel-functions-time-row">
+                <div class="timezone-compact">
+                    <label for="hour-offset" title="Múi giờ (offset giờ)">Múi giờ</label>
+                    <input type="number" max="24" min="0" id="hour-offset" value="0" aria-label="Múi giờ offset giờ">
                 </div>
+                <span id="current-time-display" class="current-time-display" aria-live="polite">--:--:--</span>
+                <button id="time-setter" class="ble-action" type="button" onclick="setTime()">Đặt giờ</button>
             </div>
-
-            <div class="button-group">
-                        <button type="button" class="ble-action" onclick="setri('e102')" title="Bấm để chuyển sang chế độ đồng hồ">Chế độ đồng hồ</button>
-            <button type="button" class="ble-action" onclick="setri('e101')" title="Bấm để chuyển sang chế độ lịch">Chế độ lịch</button>
-
-            <button type="button" class="ble-action" onclick="setri('e4')" title="Bấm để đổi màu đồng hồ">Đổi màu đồng hồ</button>
-            <button type="button" class="ble-action" onclick="triggerRxTxCmd('e100')" title="Bấm để hiển thị hình ảnh vừa tải lên màn hình">Chế độ hình ảnh</button>
+            <div class="button-group panel-functions-modes">
+                <button type="button" class="ble-action" onclick="setri('e102')" title="Chế độ đồng hồ">Chế độ đồng hồ</button>
+                <button type="button" class="ble-action" onclick="setri('e101')" title="Chế độ lịch">Chế độ lịch</button>
+                <button type="button" class="ble-action" onclick="triggerRxTxCmd('e100')" title="Hiển thị hình ảnh đã tải">Chế độ hình ảnh</button>
+                <button type="button" onclick="triggerRxTxCmd('e5')" class="ble-action" title="Lật màn hình 180°">Xoay màn hình 180°</button>
             </div>
         </section>
 
-        <section class="panel">
+        <section class="panel advanced-only">
+            <div class="panel-header">
+                <div class="panel-icon" aria-hidden="true">🕐</div>
+                <div>
+                    <div class="panel-title">Đồng hồ &amp; chế độ hiển thị (mở rộng)</div>
+                </div>
+            </div>
+            <div class="button-group">
+            <button type="button" class="ble-action" onclick="setri('e4')" title="Bấm để đổi màu đồng hồ">Đổi màu đồng hồ</button>
+            </div>
+        </section>
+
+        <section class="panel advanced-only">
             <div class="panel-header">
                 <div class="panel-icon" aria-hidden="true">🔧</div>
                 <div><div class="panel-title">Hiệu chuẩn &amp; làm mới</div></div>
             </div>
             <div class="button-group">
             <button type="button" class="ble-action" onclick="triggerRxTxCmd('e3')" title="Bấm để đảo màu đen/trắng">Đảo màu đen/trắng</button>
-            <button type="button" onclick="triggerRxTxCmd('e5')" class="ble-action" title="Bấm để lật màn hình">Xoay màn hình 180°</button>
             <input type="text" id="cmdlut_red" placeholder="Hiệu chuẩn làm mới một phần màu đỏ (hex 01-0f). Tắt đỏ và hiệu chuẩn đen (10-f0). Giá trị cao hơn = tối hơn" value="">
             <button class="ble-action" onclick="triggerEpdRed_lut(document.getElementById('cmdlut_red').value)">Đặt hiệu chuẩn làm mới một phần (cũng là ô nhập lệnh)</button>
             <button type="button" onclick="triggerRxTxCmd('E2')" class="ble-action" title="Không phản hồi? Bấm làm mới">(Không phản hồi? Bấm) Làm mới</button>
@@ -1050,7 +1168,7 @@
         
         </section>
 
-        <section class="panel">
+        <section class="panel advanced-only">
             <div class="panel-header">
                 <div class="panel-icon" aria-hidden="true">🌙</div>
                 <div><div class="panel-title">Ngủ &amp; tiết kiệm pin</div></div>
@@ -1084,7 +1202,7 @@
 
         </section>
 
-        <section class="panel">
+        <section class="panel advanced-only">
             <div class="panel-header">
                 <div class="panel-icon" aria-hidden="true">🅿</div>
                 <div><div class="panel-title">Bảng số đỗ xe 2.13"</div></div>
@@ -1098,7 +1216,7 @@
 
         
 
-        <section class="panel">
+        <section class="panel advanced-only">
             <div class="panel-header">
                 <div class="panel-icon" aria-hidden="true">🔑</div>
                 <div><div class="panel-title">Kích hoạt thiết bị</div>
@@ -1113,7 +1231,7 @@
     </div>
 
    
-    <div id="tab-countdown" class="tab-content">
+    <div id="tab-countdown" class="tab-content advanced-only">
          <section class="date-picker-section">
         <h2 class="page-title">Đếm ngược</h2>
         <p class="page-desc">Chọn ngày mục tiêu và tùy chỉnh văn bản hiển thị trên màn hình E-Paper.</p>
@@ -1191,7 +1309,7 @@
     </div>
     </div>
 
-    <div id="tab-image" class="tab-content">
+    <div id="tab-image" class="tab-content advanced-only">
         <h2 class="page-title">Truyền hình ảnh</h2>
         <p class="page-desc">Tải ảnh, điều chỉnh dithering và gửi lên màn hình E-Paper.</p>
         <section class="panel">
@@ -1295,7 +1413,7 @@
     </div>
 
    
-    <div id="tab-editor" class="tab-content">
+    <div id="tab-editor" class="tab-content advanced-only">
         <h2 class="page-title">Thiết kế mẫu</h2>
         <p class="page-desc">Thiết kế bố cục trên canvas và áp dụng sang tab truyền ảnh.</p>
 
@@ -1691,6 +1809,37 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             updateBleConnectionUI(false);
+
+            function setAppMode(mode) {
+                var isAdvanced = mode === 'advanced';
+                var root = document.querySelector('.app-main');
+                if (root) {
+                    root.classList.remove('app-mode-basic', 'app-mode-advanced');
+                    root.classList.add(isAdvanced ? 'app-mode-advanced' : 'app-mode-basic');
+                }
+                document.querySelectorAll('.mode-switch-btn').forEach(function(btn) {
+                    btn.classList.toggle('active', btn.getAttribute('data-app-mode') === mode);
+                });
+                if (!isAdvanced) {
+                    document.querySelectorAll('.tab-button').forEach(function(b) { b.classList.remove('active'); });
+                    document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+                    var settingsBtn = document.querySelector('.tab-button[data-tab="tab-settings"]');
+                    var settingsTab = document.getElementById('tab-settings');
+                    if (settingsBtn) settingsBtn.classList.add('active');
+                    if (settingsTab) settingsTab.classList.add('active');
+                }
+                try { localStorage.setItem('clock-app-mode', mode); } catch (e) {}
+            }
+
+            var savedMode = 'basic';
+            try { savedMode = localStorage.getItem('clock-app-mode') || 'basic'; } catch (e) {}
+            setAppMode(savedMode === 'advanced' ? 'advanced' : 'basic');
+
+            document.querySelectorAll('.mode-switch-btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    setAppMode(btn.getAttribute('data-app-mode') || 'basic');
+                });
+            });
 
             var themeBtn = document.getElementById('btn-theme');
             if (themeBtn) {
@@ -2771,10 +2920,35 @@ document.querySelectorAll('.tab-button').forEach(function(btn) {
             const date = new Date((unixNow + new Date().getTimezoneOffset() * 60) * 1000);
             const localeTimeString = date.toLocaleTimeString('vi-VN');
             
-            // Firmware cộng thêm 1 giờ. Mặc định múi giờ UTC+7 (Việt Nam); điều chỉnh hour-offset nếu cần.
+            // Firmware cộng thêm 1 giờ; điều chỉnh hour-offset theo múi giờ địa phương (VN thường là 7).
             unixNow += 3600;
             
             return { unixNow, localeTimeString, year: date.getFullYear(), month: date.getMonth() + 1, day: date.getDate(), week: date.getDay() || 7 }
+        }
+        function updateTimeDisplay() {
+            const { localeTimeString, year, month, day, week } = getUnixTime();
+            const pad = (n) => String(n).padStart(2, '0');
+            const label = `${year}-${pad(month)}-${pad(day)} ${localeTimeString} T${week}`;
+            const display = document.getElementById('current-time-display');
+            if (display) display.textContent = label;
+            const btn = document.getElementById('time-setter');
+            if (btn) btn.setAttribute('title', 'Đặt giờ: ' + label);
+        }
+        function initTimeClock() {
+            updateTimeDisplay();
+            if (window.__clockTimeInterval) clearInterval(window.__clockTimeInterval);
+            window.__clockTimeInterval = setInterval(updateTimeDisplay, 1000);
+            const hourOffsetInput = document.getElementById('hour-offset');
+            if (hourOffsetInput && !hourOffsetInput.dataset.clockBound) {
+                hourOffsetInput.dataset.clockBound = '1';
+                hourOffsetInput.addEventListener('input', updateTimeDisplay);
+                hourOffsetInput.addEventListener('change', updateTimeDisplay);
+            }
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initTimeClock);
+        } else {
+            initTimeClock();
         }
         let currentRotation = 0;
         let currentImage = null;
@@ -2930,11 +3104,8 @@ document.querySelectorAll('.tab-button').forEach(function(btn) {
             dithering(ctx, canvas.width, canvas.height, threshold, mode);
         }
         document.body.onload = () => {
-            setInterval(() => {
-                const { localeTimeString, year, month, day, week } = getUnixTime();
-                document.getElementById('time-setter').innerText = `Đặt giờ:${year}-${month}-${day} ${localeTimeString} T${week}`;
-            }, 1000);
             const canvas = document.getElementById('canvas');
+            if (!canvas) return;
             const ctx = canvas.getContext("2d");
             updateCanvasSize();
             ctx.fillStyle = 'white';
@@ -2946,6 +3117,7 @@ document.querySelectorAll('.tab-button').forEach(function(btn) {
             const paint_color = document.getElementById('paint-color');
             const editor = document.getElementById('edit-font');
             const font = document.getElementById('font');
+            if (!image_mode || !paint_size || !paint_color || !editor || !font) return;
             document.getElementById('dithering').value = 'bwr_floydsteinberg';
             image_mode.value = 'paint';
             paint_color.value = 'black';
