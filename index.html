@@ -711,6 +711,27 @@
         .qrcode-controls { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-subtle); }
         .qrcode-controls textarea { height: 80px; margin-bottom: 8px; }
 
+        .qr-bank-form label { display: flex; flex-direction: column; gap: 4px; font-size: 0.82rem; color: var(--muted); }
+        .qr-bank-form input,
+        .qr-bank-form textarea { width: 100%; }
+        .qr-bank-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .qr-bank-full { margin-bottom: 10px; }
+        .qr-bank-full textarea { min-height: 72px; resize: vertical; }
+        .qr-bank-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+        .qr-bank-actions button { flex: 1; min-width: 140px; }
+        .template-item[data-type="qr_bank"] > div {
+            background: linear-gradient(135deg, #fff8f5 0%, #ffe8e0 100%);
+            border: 1px dashed var(--accent);
+            font-weight: 600;
+            font-size: 9px;
+            color: var(--accent);
+        }
+
         .element-actions { display: flex; gap: 6px; margin-bottom: 8px; }
         .element-actions button { flex: 1; padding: 8px; font-size: 0.78rem; min-height: 38px; }
 
@@ -1278,6 +1299,39 @@
         <h2 class="page-title">Thiết kế mẫu</h2>
         <p class="page-desc">Thiết kế bố cục trên canvas và áp dụng sang tab truyền ảnh.</p>
 
+        <section class="panel panel-qr-bank" id="panel-qr-bank">
+            <div class="panel-header">
+                <div class="panel-icon" aria-hidden="true">🏦</div>
+                <div>
+                    <div class="panel-title">Mẫu QR Bank</div>
+                    <div class="panel-subtitle">Tạo màn hình chuyển khoản với mã QR VietQR</div>
+                </div>
+            </div>
+            <div class="control-group qr-bank-form">
+                <div class="qr-bank-grid">
+                    <label for="qr-bank-owner">Tên chủ tài khoản
+                        <input type="text" id="qr-bank-owner" placeholder="NGUYEN VAN A" maxlength="40">
+                    </label>
+                    <label for="qr-bank-name">Ngân hàng
+                        <input type="text" id="qr-bank-name" placeholder="Vietcombank" maxlength="30">
+                    </label>
+                    <label for="qr-bank-account">Số tài khoản
+                        <input type="text" id="qr-bank-account" placeholder="1234567890" maxlength="20" inputmode="numeric">
+                    </label>
+                </div>
+                <label class="qr-bank-full" for="qr-bank-content">Nội dung QR (VietQR — dán từ app ngân hàng)
+                    <textarea id="qr-bank-content" placeholder="Dán chuỗi VietQR hoặc URL thanh toán..."></textarea>
+                </label>
+                <label class="qr-bank-full" for="qr-bank-image-upload">Hoặc upload ảnh QR
+                    <input type="file" id="qr-bank-image-upload" accept="image/*">
+                </label>
+                <div class="qr-bank-actions">
+                    <button type="button" id="apply-qr-bank-template">Áp dụng mẫu QR Bank</button>
+                    <button type="button" id="preview-qr-bank-template" class="secondary">Xem trước QR</button>
+                </div>
+            </div>
+        </section>
+
         <section class="panel panel-editor-workspace">
             <div class="panel-header">
                 <div class="panel-icon" aria-hidden="true">✎</div>
@@ -1499,6 +1553,9 @@
                     </div>
                     <div class="template-item" data-type="bg_image6" data-image-url="./images/bg5.jpg">
                         <div style="width:100%;height:100%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#666;">WIFI</div>
+                    </div>
+                    <div class="template-item" data-type="qr_bank" title="Áp dụng mẫu QR Bank">
+                        <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">QR Bank</div>
                     </div>
                 </div>
                 <button class="upload-btn secondary" style="margin-bottom:8px;">
@@ -3310,6 +3367,10 @@ document.querySelectorAll('.tab-button').forEach(function(btn) {
             type: 'color', 
             background: '#ffffff' 
         },
+        qr_bank: {
+            type: 'color',
+            background: '#ffffff'
+        },
         gradient1: { 
             type: 'gradient', 
             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
@@ -4106,6 +4167,158 @@ function loadBuiltInBackground(templateId, url) {
                 alert('Tạo mã QR thất bại! Lỗi:' + error.message);
             }
         }
+        function loadImageFromSrc(src) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => resolve(img);
+                img.onerror = reject;
+                img.src = src;
+            });
+        }
+        async function resolveQrBankImage(qrContent, fileInput) {
+            if (fileInput && fileInput.files && fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                const dataURL = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+                const img = await loadImageFromSrc(dataURL);
+                const iconId = `qrcode_${state.nextIconId++}`;
+                state.uploadedIcons[iconId] = img;
+                return iconId;
+            }
+            const content = qrContent || 'https://hoantien.dev';
+            const dataURL = await generateQRCode(content);
+            const img = await loadImageFromSrc(dataURL);
+            const iconId = `qrcode_${state.nextIconId++}`;
+            state.uploadedIcons[iconId] = img;
+            return iconId;
+        }
+        function makeQrBankText(x, y, content, size, options) {
+            const opts = options || {};
+            return {
+                type: 'text',
+                x: x,
+                y: y,
+                content: content,
+                fontFamily: opts.fontFamily || "'Be Vietnam Pro', Arial, sans-serif",
+                size: size,
+                bold: !!opts.bold,
+                italic: false,
+                underline: false,
+                color: opts.color || '#191713',
+                rotation: 0
+            };
+        }
+        async function applyQrBankTemplate() {
+            if (state.elements.length > 0 && !confirm('Áp dụng mẫu QR Bank sẽ thay thế các phần tử hiện tại trên canvas. Tiếp tục?')) {
+                return;
+            }
+            const owner = document.getElementById('qr-bank-owner').value.trim();
+            const bank = document.getElementById('qr-bank-name').value.trim();
+            const account = document.getElementById('qr-bank-account').value.trim();
+            const qrContent = document.getElementById('qr-bank-content').value.trim();
+            const fileInput = document.getElementById('qr-bank-image-upload');
+            const cw = canvas.width;
+            const ch = canvas.height;
+            const margin = Math.round(cw * 0.06);
+            const qrSize = Math.min(Math.round(ch * 0.42), Math.round(cw * 0.34), 200);
+            const titleSize = Math.max(14, Math.round(cw * 0.032));
+            const labelSize = Math.max(12, Math.round(cw * 0.024));
+            const valueSize = Math.max(14, Math.round(cw * 0.028));
+            const hintSize = Math.max(10, Math.round(cw * 0.02));
+            try {
+                const qrIconId = await resolveQrBankImage(qrContent, fileInput);
+                state.elements = [];
+                state.selectedElementIndex = -1;
+                state.selectedBgTemplate = 'qr_bank';
+                state.uploadedBg = null;
+                state.bgColor = '#ffffff';
+                const bgItems = bgTemplates.querySelectorAll('.template-item');
+                bgItems.forEach(i => i.classList.remove('selected'));
+                const qrBankBg = bgTemplates.querySelector('.template-item[data-type="qr_bank"]');
+                if (qrBankBg) qrBankBg.classList.add('selected');
+                state.elements.push(makeQrBankText(margin, margin + titleSize, 'CHUYỂN KHOẢN NGÂN HÀNG', titleSize, { bold: true }));
+                const qrY = margin + titleSize + 16;
+                state.elements.push({
+                    type: 'rect',
+                    x: margin - 4,
+                    y: qrY - 4,
+                    width: qrSize + 8,
+                    height: qrSize + 8,
+                    color: '#f5f1e8',
+                    rotation: 0
+                });
+                state.elements.push({
+                    type: 'image',
+                    x: margin,
+                    y: qrY,
+                    width: qrSize,
+                    height: qrSize,
+                    iconId: qrIconId,
+                    isUploaded: false,
+                    isQrcode: true,
+                    isLocalImage: false,
+                    rotation: 0
+                });
+                const textX = margin + qrSize + Math.round(cw * 0.04);
+                let textY = qrY + 8;
+                const lineGap = Math.max(22, Math.round(valueSize * 1.5));
+                if (owner) {
+                    state.elements.push(makeQrBankText(textX, textY, owner.toUpperCase(), valueSize, { bold: true }));
+                    textY += lineGap;
+                }
+                if (bank) {
+                    state.elements.push(makeQrBankText(textX, textY, bank, labelSize, { color: '#5c574f' }));
+                    textY += lineGap;
+                }
+                if (account) {
+                    state.elements.push(makeQrBankText(textX, textY, account, valueSize, { bold: true }));
+                    textY += lineGap;
+                }
+                state.elements.push(makeQrBankText(textX, Math.min(textY, ch - margin), 'Quét mã để chuyển khoản', hintSize, { color: '#8f897c' }));
+                renderElements();
+                sizeControls.classList.remove('show');
+                shapeParams.classList.remove('show');
+                textControls.style.display = 'none';
+                if (typeof addLog === 'function') {
+                    addLog('Đã áp dụng mẫu QR Bank lên canvas');
+                }
+            } catch (error) {
+                console.error('QR Bank template failed:', error);
+                alert('Không thể tạo mẫu QR Bank: ' + error.message);
+            }
+        }
+        async function previewQrBankQrOnly() {
+            const qrContent = document.getElementById('qr-bank-content').value.trim();
+            const fileInput = document.getElementById('qr-bank-image-upload');
+            if (!qrContent && (!fileInput.files || !fileInput.files.length)) {
+                alert('Nhập nội dung VietQR hoặc chọn ảnh QR để xem trước.');
+                return;
+            }
+            try {
+                const qrIconId = await resolveQrBankImage(qrContent, fileInput);
+                const qrImg = state.uploadedIcons[qrIconId];
+                const previewItem = document.createElement('div');
+                previewItem.className = 'template-item selected';
+                previewItem.dataset.type = qrIconId;
+                previewItem.innerHTML = `
+                    <img src="${qrImg.src}" alt="QR Bank" style="object-fit: contain; background: white;">
+                    <div class="preview-remove" onclick="removeUploadedIcon('${qrIconId}', this)">x</div>
+                `;
+                const iconItems = imageTemplates.querySelectorAll('.template-item');
+                iconItems.forEach(item => item.classList.remove('selected'));
+                imageTemplates.appendChild(previewItem);
+                state.selectedImageTemplate = qrIconId;
+                elementTypeSelect.value = 'image';
+                alert('Đã tạo QR — có thể thêm thủ công bằng "Thêm phần tử" hoặc bấm "Áp dụng mẫu QR Bank".');
+            } catch (error) {
+                alert('Không tạo được QR: ' + error.message);
+            }
+        }
         function addLocalImageIcon() {
             const imageUrl = prompt('Enter local image path or URL (relative or absolute):', './images/icon.png');
             if (!imageUrl) {
@@ -4497,6 +4710,12 @@ function loadBuiltInBackground(templateId, url) {
                     if (item.querySelector('.preview-remove') && e.target.closest('.preview-remove')) {
                         return;
                     }
+                    if (item.dataset.type === 'qr_bank') {
+                        const panel = document.getElementById('panel-qr-bank');
+                        if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        applyQrBankTemplate();
+                        return;
+                    }
                     const bgItems = bgTemplates.querySelectorAll('.template-item');
                     bgItems.forEach(i => i.classList.remove('selected'));
                     item.classList.add('selected');
@@ -4505,6 +4724,10 @@ function loadBuiltInBackground(templateId, url) {
                     applyBackground();
                 }
             });
+            const applyQrBankBtn = document.getElementById('apply-qr-bank-template');
+            const previewQrBankBtn = document.getElementById('preview-qr-bank-template');
+            if (applyQrBankBtn) applyQrBankBtn.addEventListener('click', applyQrBankTemplate);
+            if (previewQrBankBtn) previewQrBankBtn.addEventListener('click', previewQrBankQrOnly);
             applyBgBtn.addEventListener('click', applyBackground);
             imageTemplates.addEventListener('click', (e) => {
                 const item = e.target.closest('.template-item');
