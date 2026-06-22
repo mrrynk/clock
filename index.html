@@ -243,6 +243,7 @@
             display: inline-flex;
             gap: 10px;
             padding: 6px;
+            min-width: min(100%, 280px);
             background: var(--bg-elevated);
             border: 1px solid var(--border-subtle);
             border-radius: 999px;
@@ -252,7 +253,7 @@
         .mode-switch-btn {
             border: none;
             border-radius: 999px;
-            padding: 8px 20px;
+            padding: 8px 22px;
             font-family: inherit;
             font-size: 0.82rem;
             font-weight: 800;
@@ -261,8 +262,10 @@
             color: var(--text-muted);
             transition: background var(--transition), color var(--transition), box-shadow var(--transition);
             min-height: 40px;
-            min-width: 92px;
+            min-width: 118px;
             flex: 1 1 0;
+            white-space: nowrap;
+            line-height: 1.2;
         }
 
         .mode-switch-btn:hover { color: var(--text-primary); background: var(--bg-surface); }
