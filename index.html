@@ -1,697 +1,1047 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="utf-8">
     <meta http-equiv="content-type" content="text/html; charset=utf-8">
-    <title>E-Paper Tag - v42</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#121110">
+    <title>E-Paper Tag - Điều khiển Bluetooth</title>
+    <script>
+        (function () {
+            try {
+                var t = localStorage.getItem("clock-theme");
+                if (t !== "light" && t !== "dark") t = "dark";
+                document.documentElement.setAttribute("data-theme", t);
+            } catch (e) {
+                document.documentElement.setAttribute("data-theme", "dark");
+            }
+        })();
+    </script>
     <style>
-        /* Base style reset */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
+        /* hoantien.dev design tokens */
+        :root {
+            --bg: #f4f1ea;
+            --card: #fffdf8;
+            --surface-2: #efeae0;
+            --text: #191713;
+            --soft: #4d4840;
+            --muted: #8c857a;
+            --border: #e2dccf;
+            --border-strong: #d2cbbb;
+            --accent: #f5471f;
+            --accent-hover: #d83a14;
+            --accent-dim: #fde9e2;
+            --teal: #0d7a6b;
+            --teal-dim: #dbefe9;
+            --success: #15803d;
+            --success-dim: #dcfce7;
+            --warning: #b4690e;
+            --danger: #dc2626;
+            --danger-dim: #fee2e2;
+            --radius: 16px;
+            --radius-sm: 10px;
+            --radius-md: 12px;
+            --radius-lg: 24px;
+            --shadow-sm: 0 1px 2px rgba(25, 23, 19, 0.05);
+            --shadow-md: 0 1px 2px rgba(25, 23, 19, 0.05), 0 8px 24px rgba(25, 23, 19, 0.06);
+            --topbar-bg: rgba(255, 253, 248, 0.96);
+            --header-h: 64px;
+            --banner-h: 72px;
+            --transition: 0.18s ease;
+            --font-body: "Be Vietnam Pro", system-ui, sans-serif;
+            --font-mono: "JetBrains Mono", ui-monospace, monospace;
+            --layout-max: 1100px;
+            --bg-base: var(--bg);
+            --bg-elevated: var(--card);
+            --bg-surface: var(--surface-2);
+            --bg-surface-hover: color-mix(in srgb, var(--surface-2) 88%, var(--text));
+            --bg-input: var(--bg);
+            --border-subtle: var(--border);
+            --text-primary: var(--text);
+            --text-secondary: var(--soft);
+            --text-muted: var(--muted);
+            --secondary: var(--teal);
+            --secondary-dim: var(--teal-dim);
+            color-scheme: light;
         }
+
+        :root[data-theme="dark"] {
+            --bg: #121110;
+            --card: #1c1a17;
+            --surface-2: #24211c;
+            --text: #f5f1e8;
+            --soft: #cbc4b6;
+            --muted: #8f897c;
+            --border: rgba(255, 255, 255, 0.09);
+            --border-strong: rgba(255, 255, 255, 0.16);
+            --accent: #ff6a45;
+            --accent-hover: #ff8163;
+            --accent-dim: rgba(255, 106, 69, 0.16);
+            --teal: #33d6bf;
+            --teal-dim: rgba(51, 214, 191, 0.15);
+            --success: #34d399;
+            --success-dim: rgba(52, 211, 153, 0.15);
+            --warning: #e9a23b;
+            --danger: #f87171;
+            --danger-dim: rgba(248, 113, 113, 0.15);
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+            --shadow-md: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 30px rgba(0, 0, 0, 0.5);
+            --topbar-bg: rgba(28, 26, 23, 0.96);
+            color-scheme: dark;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background-color: #f5f5f5;
-            padding: 10px;
-            max-width: 100%;
+            font-family: var(--font-body);
+            line-height: 1.65;
+            color: var(--text-primary);
+            background: var(--bg-base);
+            background-image: radial-gradient(var(--border) 0.9px, transparent 0.9px);
+            background-size: 22px 22px;
+            min-height: 100vh;
             overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* Tab styles */
+        h1, h2, h3, .page-title, .panel-title {
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+
+        .shopee-orange { color: #ee4d2d; }
+        :root[data-theme="dark"] .shopee-orange { color: #ff6633; }
+
+        .app-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--topbar-bg);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-subtle);
+            box-shadow: 0 1px 0 color-mix(in srgb, var(--text) 4%, transparent);
+        }
+
+        .header-inner {
+            max-width: var(--layout-max);
+            margin: 0 auto;
+            padding: 0 20px;
+            height: var(--header-h);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .header-brand { display: flex; align-items: center; gap: 12px; min-width: 0; text-decoration: none; color: inherit; }
+
+        .header-icon, .brand-mark {
+            width: 40px; height: 40px;
+            border-radius: var(--radius-sm);
+            background: var(--accent);
+            color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.78rem; font-weight: 800; flex-shrink: 0;
+            box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 35%, transparent);
+            letter-spacing: -0.02em;
+        }
+
+        .header-brand h1 { font-size: 1rem; font-weight: 800; line-height: 1.2; }
+        .header-brand p, .header-brand .brand-sub { font-size: 0.65rem; font-weight: 600; color: var(--text-muted); margin-top: 1px; display: block; }
+
+        .header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+        .btn-theme {
+            width: 38px; height: 38px; padding: 0;
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            background: var(--bg-surface);
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.05rem; line-height: 1;
+            transition: border-color var(--transition), background var(--transition);
+            min-height: unset; flex: unset; box-shadow: none;
+        }
+
+        .btn-theme:hover {
+            border-color: var(--accent);
+            background: var(--accent-dim);
+            transform: none;
+            box-shadow: none;
+        }
+
+        .theme-icon-sun { display: none; }
+        :root[data-theme="dark"] .theme-icon-moon { display: none; }
+        :root[data-theme="dark"] .theme-icon-sun { display: inline; }
+
+        .ble-status {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 14px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: 999px;
+            font-size: 0.82rem; font-weight: 700;
+            color: var(--text-secondary); white-space: nowrap;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .status-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--text-muted); flex-shrink: 0;
+            transition: background var(--transition), box-shadow var(--transition);
+        }
+
+        .status-dot.connected {
+            background: var(--success);
+            box-shadow: 0 0 8px rgba(52, 211, 153, 0.6);
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+
+        .status-dot.connecting {
+            background: var(--warning);
+            animation: pulse-dot 0.8s ease-in-out infinite;
+        }
+
+        @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        .app-main,
+        .app-shell {
+            max-width: var(--layout-max);
+            margin: 0 auto;
+            padding: 0 16px 24px;
+            overflow-x: clip;
+        }
+
+        .content {
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            overflow-x: clip;
+        }
+
         .tabs-container {
-            margin-bottom: 20px;
+            position: sticky;
+            top: calc(var(--header-h) + var(--banner-h));
+            z-index: 90;
+            margin: 0 0 0;
+            padding: 14px 0 0;
+            background: linear-gradient(to bottom, var(--bg-base) 75%, transparent);
         }
 
         .tab-buttons {
-            display: flex;
-            background-color: #fff;
-            border-radius: 8px 8px 0 0;
-            overflow: hidden;
-            box-shadow: 0 2px 5px hwb(234 5% 13% / 0.843);
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+            padding: 4px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: 999px;
+            box-shadow: var(--shadow-md);
         }
 
         .tab-button {
-            flex: 1;
-            padding: 15px 20px;
-            text-align: center;
-          
-            border: none;
-            border-bottom: 3px solid transparent;
-            font-size: 16px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s;
-            white-space: nowrap;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 4px; padding: 10px 8px;
+            border: none; border-radius: 999px;
+            background: transparent; color: var(--text-muted);
+            font-family: inherit; font-size: 0.78rem; font-weight: 800;
+            cursor: pointer; transition: background var(--transition), color var(--transition);
+            min-height: 52px; margin: 0; box-shadow: none; flex: unset;
         }
 
-        .tab-button:hover {
-            background-color: #e0e0e0;
-        }
+        .tab-icon { font-size: 1.1rem; line-height: 1; opacity: 0.9; }
+        .tab-label { line-height: 1.2; text-align: center; }
+
+        .tab-button:hover { background: var(--bg-surface); color: var(--text-primary); transform: none; box-shadow: none; }
 
         .tab-button.active {
-            background-color: #fff;
-            border-bottom: 3px solid #4a6ee0;
-            color: #4a6ee0;
+            background: var(--accent-dim);
+            color: var(--accent);
+            box-shadow: none;
         }
+
+        .tab-button.active .tab-icon { opacity: 1; }
 
         .tab-content {
-            display: none;
-            background-color: white;
-            border-radius: 0 0 8px 8px;
-            padding: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            animation: fadeIn 0.3s ease-in;
+            display: none; padding: 20px 0; animation: fadeIn 0.25s ease;
+            min-width: 0; max-width: 100%; overflow-x: clip;
         }
+        .tab-content.active { display: block; }
 
-        .tab-content.active {
-            display: block;
+        #tab-image,
+        #tab-editor {
+            min-width: 0; max-width: 100%;
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Button style optimization */
-        button {
-            background-color: #4a6ee0;
-            color: white;
-            border: none;
-            padding: 12px 16px;
-            margin: 5px;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            min-height: 44px; /* Touch friendly */
-            flex: 1 1 auto;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        .page-title { font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; letter-spacing: -0.02em; }
+        .page-desc { font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.5; }
+
+        .panel {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius);
+            padding: 20px; margin-bottom: 16px;
+            box-shadow: var(--shadow-md);
+            min-width: 0; max-width: 100%;
+            overflow: hidden;
         }
 
-        button:hover {
-            background-color: #3a5ecf;
-            transform: translateY(-2px);
+        .panel-header {
+            display: flex; align-items: center; gap: 10px;
+            margin-bottom: 14px; padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-subtle);
         }
 
-        button:active {
-            transform: translateY(0);
+        .panel-icon {
+            width: 36px; height: 36px;
+            border-radius: var(--radius-sm);
+            background: var(--teal-dim); color: var(--teal);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem; flex-shrink: 0;
         }
 
-        /* Button group layout */
-        .button-group {
-            max-width: 100%;
-            min-width: 100%;
-            display: flex;
-            flex-wrap: wrap;
-            margin: 10px 0;
-            gap: 8px;
-        }
-
-        .button-group button {
-            flex: 1 1 calc(50% - 10px);
-            min-width: 120px;
-        }
-
-        /* Form element optimization */
-        input, select {
-            width: 100%;
-            padding: 12px;
-            margin: 8px 0;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 16px;
-            background-color: white;
-            min-height: 44px; /* Touch friendly */
-        }
-
-        input[type="number"] {
-            width: auto;
-            min-width: 70px;
-        }
-
-        /* Main content area */
-        .input-section, .preview-section {
-            background-color: white;
-            padding: 15px;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
+        .panel-title { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); }
+        .panel-subtitle { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
 
         .section-title {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            font-size: 1rem; font-weight: 600; margin-bottom: 14px;
+            display: flex; align-items: center; gap: 8px; color: var(--text-primary);
         }
 
-        .input-group {
-            margin-bottom: 15px;
+        button {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            padding: 10px 16px; margin: 0;
+            border-radius: var(--radius-sm);
+            font-family: inherit; font-size: 0.875rem; font-weight: 700;
+            cursor: pointer; transition: transform var(--transition), background var(--transition), box-shadow var(--transition);
+            min-height: 42px; flex: 1 1 auto;
+            box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 35%, transparent);
         }
 
-        .input-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
+        button:hover:not(:disabled) {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) 40%, transparent);
         }
 
-        /* Canvas area optimization */
-        #canvas-box {
-            position: relative;
-            width: 100%;
-            margin: 15px 0;
+        button:active:not(:disabled) { transform: translateY(0); }
+
+        button:disabled,
+        body.ble-disconnected .ble-action:disabled {
+            opacity: 0.45; cursor: not-allowed;
+            transform: none !important; box-shadow: none !important; filter: grayscale(0.4);
         }
 
-        #canvas {
-            width: auto;
-            max-width: 800px;
-             min-width: 600px;
-            height: auto;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            background-color: white;
-            touch-action: manipulation;
-            display: block;
-            margin: 0 auto; /* Key - horizontal centering */
+        button.secondary {
+            background: var(--secondary-dim); color: var(--secondary);
+            border: 1px solid color-mix(in srgb, var(--secondary) 35%, transparent);
+            box-shadow: none;
         }
 
-        .log-box {
-            margin-top: 15px;
-        }
-        
-        #log {
-            height: 200px;
-            overflow-y: auto;
-            background-color: #f9f9f9;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            padding: 10px;
-            font-family: monospace;
-            font-size: 12px;
+        button.secondary:hover:not(:disabled) {
+            background: color-mix(in srgb, var(--secondary) 20%, var(--secondary-dim));
+            box-shadow: 0 4px 12px color-mix(in srgb, var(--secondary) 20%, transparent);
         }
 
-        /* Image adjustment control area */
-        .image-adjustments {
-           max-width: 100%;
-            min-width: 100%;
-            background-color: white;
-            padding: 15px;
-            border-radius: 10px;
-            margin: 10px 0;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        button.danger {
+            background: var(--danger-dim); color: var(--danger);
+            border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+            box-shadow: none;
         }
 
-      .preview-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-}
-
-.preview-canvas-wrapper {
-    width: 90%;
-    max-width: 800px;
-    margin: 0 auto;
-    text-align: center;
-}
-
-#previewCanvas {
-    width: 100%;
-    height: auto;
-    display: inline-block;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    background-color: white;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-  .canvas-container {
-            background: white;
-            width:  auto;
-            border: 2px solid #494747;
-            min-width:  auto;
-            max-width:  auto;
-            min-height: auto;
-            max-height: auto;
-            padding: 10px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        /* Responsive design */
-        @media (min-width: 768px) {
-            .main-content {
-                flex-direction: row;
-            }
-            
-            .input-section {
-                flex: 1;
-            }
-            
-            .preview-section {
-                flex: 1;
-            }
-            
-            .button-group button {
-                flex: 1 1 calc(33.333% - 10px);
-            }
+        button.danger:hover:not(:disabled) {
+            background: color-mix(in srgb, var(--danger) 18%, var(--danger-dim));
+            box-shadow: 0 4px 12px color-mix(in srgb, var(--danger) 20%, transparent);
         }
 
-        @media (max-width: 480px) {
-            body {
-                padding: 5px;
-            }
-            
-            button {
-                padding: 10px 12px;
-                font-size: 14px;
-            }
-            
-            .button-group button {
-                flex: 1 1 100%;
-            }
-            
-            .tab-button {
-                padding: 10px 5px;
-                font-size: 14px;
-            }
-        }
-
-        /* Special button styles */
         #generateBtn {
-            background-color: #28a745;
+            background: var(--teal);
+            color: #fff;
+            border: none;
+            box-shadow: 0 4px 14px color-mix(in srgb, var(--teal) 35%, transparent);
         }
 
-        #generateBtn:hover {
-            background-color: #218838;
+        #generateBtn:hover:not(:disabled) {
+            background: color-mix(in srgb, var(--teal) 85%, white);
+            box-shadow: 0 6px 20px color-mix(in srgb, var(--teal) 40%, transparent);
         }
 
         .copy-btn {
-            background-color: #6c757d;
+            background: var(--bg-elevated); color: var(--text-secondary);
+            border: 1px solid var(--border-strong);
+            box-shadow: none;
         }
 
-        .copy-btn:hover {
-            background-color: #5a6268;
+        .copy-btn:hover:not(:disabled) {
+            background: var(--bg-surface); color: var(--text-primary);
+            border-color: var(--accent);
         }
 
-        /* Element designer module styles */
-        .editor-container {
-            display: flex;
-            gap: 20px;
-            max-width: 100%;
-            margin: 0 auto;
-        }
-        .control-panel {
-            width: 280px;
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            overflow-y: auto;
-            max-height: 600px;
-        }
-        .canvas-container {
-            flex: 1;
-            background: white;
-            padding: 10px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        #canvas-editor {
-            width: 100%;
-            height: 400px;
-            border: 1px solid #ccc;
-            background-color: white;
-            touch-action: none;
-        }
-        .control-group {
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #eee;
-        }
-        .control-group:last-child {
-            border-bottom: none;
-        }
-        .control-group h3 {
-            font-size: 16px;
-            margin-bottom: 8px;
-            color: #333;
-        }
-    </style>
-
-<style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: Arial, sans-serif;
-        }
-        body {
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        .editor-container {
-            display: flex;
-            gap: 20px;
-            max-width: 900px;
-            margin: 0 auto;
-        }
-        .control-panel {
-            width: 280px;
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            overflow-y: auto;
-            max-height: 600px;
-        }
-        .canvas-container {
-            background: white;
-            padding: 10px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-       
-        .control-group {
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #eee;
-        }
-        .control-group:last-child {
-            border-bottom: none;
-        }
-        .control-group h3 {
-            font-size: 16px;
-            margin-bottom: 8px;
-            color: #333;
-        }
-        button, select, input, textarea {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        textarea {
-            height: 60px;
-            resize: none;
-        }
-        button {
-            background-color: #4CAF50;
-            color: white;
+        #connectbutton {
+            background: var(--teal);
+            color: #fff;
             border: none;
-            cursor: pointer;
-            transition: background-color 0.3s;
+            font-weight: 800;
+            box-shadow: 0 4px 14px color-mix(in srgb, var(--teal) 35%, transparent);
         }
-        button:hover {
-            background-color: #45a049;
+
+        #connectbutton:hover:not(:disabled) {
+            background: color-mix(in srgb, var(--teal) 85%, white);
         }
-        button.secondary {
-            background-color: #2196F3;
+
+        .button-group {
+            display: flex; flex-wrap: wrap; gap: 8px;
+            margin: 0; max-width: 100%; min-width: 0;
         }
-        button.secondary:hover {
-            background-color: #1976D2;
+
+        .button-group button { flex: 1 1 calc(50% - 4px); min-width: 0; max-width: 100%; }
+
+        .button-row-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+        .button-row-actions button { flex: 1 1 200px; }
+
+        input, select, textarea {
+            width: 100%; padding: 10px 12px; margin: 0;
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-sm);
+            font-family: inherit; font-size: 0.875rem;
+            background: var(--bg-input); color: var(--text-primary);
+            min-height: 42px;
+            transition: border-color var(--transition), box-shadow var(--transition);
         }
-        button.danger {
-            background-color: #f44336;
+
+        input:focus, select:focus, textarea:focus {
+            outline: none; border-color: var(--accent);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+            background: var(--bg-elevated);
         }
-        button.danger:hover {
-            background-color: #d32f2f;
+
+        input[type="number"] { width: auto; min-width: 72px; max-width: 100px; }
+        input[type="range"] { padding: 0; min-height: unset; accent-color: var(--accent); background: transparent; border: none; }
+        input[type="file"] { padding: 8px; font-size: 0.82rem; }
+        input[type="color"] { min-height: unset; padding: 2px; }
+
+        select {
+            cursor: pointer; appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%239aa8bc' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 12px center;
+            padding-right: 32px;
         }
-        .color-palette {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 5px;
-            margin-bottom: 10px;
+
+        textarea { height: 60px; resize: vertical; min-height: 60px; }
+
+        .input-group { margin-bottom: 16px; }
+
+        .input-group label, .form-label {
+            display: block; margin-bottom: 6px;
+            font-size: 0.82rem; font-weight: 600; color: var(--text-secondary);
         }
-        .color-option {
-            width: 25px;
-            height: 25px;
-            border-radius: 50%;
-            cursor: pointer;
-            border: 2px solid transparent;
-            transition: transform 0.2s;
+
+        .form-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; margin-bottom: 12px; }
+        .form-row label { margin-bottom: 0; flex: 0 0 auto; }
+        .form-row input, .form-row select { flex: 1 1 160px; }
+
+        .inline-field { display: flex; flex-direction: column; gap: 6px; flex: 1 1 140px; min-width: 120px; }
+        .hint-text { font-size: 0.78rem; color: var(--text-muted); margin-top: 6px; }
+
+        .slider-container { display: flex; align-items: center; gap: 12px; }
+        .slider-container input[type="range"] { flex: 1; }
+        .slider-value { min-width: 48px; text-align: right; font-size: 0.82rem; font-weight: 700; color: var(--teal); font-variant-numeric: tabular-nums; }
+
+        .main-content { display: flex; flex-direction: column; gap: 16px; }
+
+        .input-section, .preview-section {
+            background: var(--bg-elevated); border: 1px solid var(--border-subtle);
+            padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow-md);
         }
-        .color-option:hover {
-            transform: scale(1.1);
+
+        .date-picker-section { margin-bottom: 16px; }
+        .date-picker-container { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+        .date-picker-container label { font-weight: 600; color: var(--text-secondary); font-size: 0.875rem; }
+
+        .theme-badge {
+            padding: 10px 14px; border-radius: var(--radius-md);
+            background: var(--bg-surface); border: 1px solid var(--border-subtle);
+            color: var(--text-primary); font-weight: 600; font-size: 0.875rem;
         }
-        .color-option.selected {
-            border-color: #333;
-            transform: scale(1.1);
+
+        .preview-container { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
+        .preview-canvas-wrapper { width: 100%; max-width: 800px; margin: 0 auto; text-align: center; }
+
+        #previewCanvas {
+            width: 100%; height: auto; display: inline-block;
+            border: 1px solid var(--border-strong); border-radius: var(--radius-md);
+            background: #fff; box-shadow: var(--shadow-md);
         }
-        .position-controls {
-            display: flex;
-            gap: 5px;
+
+        #canvas-box {
+            position: relative; width: 100%; max-width: 100%; min-width: 0;
+            margin: 16px 0 0; padding: 12px;
+            background: var(--bg-surface); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            overflow-x: auto; overflow-y: hidden;
+            text-align: center;
+            -webkit-overflow-scrolling: touch;
         }
-        .position-controls button {
-            flex: 1;
-            padding: 5px;
+
+        #canvas {
+            display: block; max-width: 100%; width: auto; min-width: 0; height: auto;
+            border: 1px solid var(--border-strong) !important;
+            border-radius: var(--radius-md); background-color: white;
+            touch-action: manipulation; margin: 0 auto;
         }
-        /* Background/image template preview */
-        .template-preview {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 8px;
-            margin-bottom: 8px;
-        }
-        .template-item {
-            width: 50px;
-            height: 40px;
-            border: 2px solid transparent;
-            border-radius: 4px;
-            cursor: pointer;
-            overflow: hidden;
-            position: relative;
-            transition: transform 0.2s;
-        }
-        .template-item:hover {
-            transform: scale(1.05);
-        }
-        .template-item.selected {
-            border-color: #4CAF50;
-        }
-        .template-item img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-        /* Text style controls */
-        .text-style {
-            display: flex;
-            gap: 5px;
-            margin-bottom: 8px;
-        }
-        .text-style button {
-            padding: 4px;
-            flex: 1;
+
+        .panel-image-workspace .button-group {
             margin-bottom: 0;
         }
-        /* Upload button styles */
-        .upload-btn {
-            position: relative;
+
+        .panel-image-workspace #canvas-box {
+            margin-bottom: 0;
+        }
+
+        .adjustment-row {
+            display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto auto;
+            gap: 4px 12px; align-items: center;
+            margin-bottom: 14px; padding-bottom: 14px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .adjustment-row:last-of-type { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .adjustment-row label { grid-column: 1; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); }
+        .adjustment-value { grid-column: 2; font-size: 0.82rem; font-weight: 700; color: var(--teal); font-variant-numeric: tabular-nums; min-width: 36px; text-align: right; }
+        .adjustment-row input[type="range"] { grid-column: 1 / -1; }
+
+        .control-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 16px; }
+        .control-grid .inline-field { margin: 0; }
+
+        .log-panel {
+            margin-top: 24px; background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-md);
+        }
+
+        .log-panel-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 16px; background: var(--bg-surface);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .log-panel-title { font-size: 0.875rem; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
+
+        .log-clear-btn {
+            padding: 6px 12px !important; min-height: 32px !important; font-size: 0.78rem !important;
+            flex: unset !important; background: var(--bg-input) !important;
+            color: var(--text-secondary) !important; border-color: var(--border-strong) !important;
+        }
+
+        #log {
+            height: 220px; overflow-y: auto; background: var(--bg);
+            padding: 12px 16px;
+            font-family: var(--font-mono);
+            font-size: 0.75rem; line-height: 1.6; color: var(--soft);
+        }
+
+        #log::-webkit-scrollbar { width: 6px; }
+        #log::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+
+        .panel-editor-workspace .editor-workspace {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            width: 100%;
+            min-width: 0;
+            max-width: 100%;
             overflow: hidden;
         }
-        .upload-btn input {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            opacity: 0;
-            cursor: pointer;
+
+        .panel-editor-workspace .canvas-container {
+            flex: 1 1 auto;
+            min-width: 0;
+            max-width: 100%;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            padding: 12px;
+            overflow: auto;
+            -webkit-overflow-scrolling: touch;
         }
-        /* Preview delete button */
+
+        .panel-editor-workspace .control-panel {
+            flex: 1 1 auto;
+            min-width: 0;
+            max-width: 100%;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            overflow-x: hidden;
+            overflow-y: auto;
+            max-height: 640px;
+        }
+
+        @media (min-width: 768px) {
+            .panel-editor-workspace .editor-workspace {
+                flex-direction: row;
+                align-items: flex-start;
+            }
+
+            .panel-editor-workspace .canvas-container {
+                flex: 1 1 0;
+                min-width: 0;
+            }
+
+            .panel-editor-workspace .control-panel {
+                flex: 0 0 280px;
+                max-width: 36%;
+            }
+        }
+
+        #canvas-editor, #canvas_YS {
+            display: block;
+            max-width: 100%;
+            width: auto;
+            min-width: 0;
+            height: auto;
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-sm);
+            background-color: white;
+            touch-action: none;
+            margin: 0 auto;
+        }
+
+        #tab-editor .panel textarea,
+        #tab-editor .panel select,
+        #tab-editor .panel input:not([type="color"]):not([type="checkbox"]):not([type="range"]) {
+            max-width: 100%;
+        }
+
+        #tab-editor #text-content {
+            width: 100%;
+            margin-top: 12px;
+        }
+
+        .editor-actions-panel {
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+        }
+
+        .editor-actions-panel .control-group {
+            margin-bottom: 0; padding-bottom: 0; border-bottom: none;
+            display: flex; flex-wrap: wrap; gap: 8px;
+        }
+
+        .editor-actions-panel .control-group button {
+            flex: 1 1 200px; min-width: 0; max-width: 100%;
+        }
+
+        #tab-editor .template-preview,
+        #tab-editor .color-palette,
+        #tab-editor .bg-color-selector,
+        #tab-editor .element-actions,
+        #tab-editor .position-controls,
+        #tab-editor .text-style,
+        #tab-editor .size-inputs,
+        #tab-editor .rotate-controls {
+            max-width: 100%; min-width: 0;
+        }
+
+        .control-group { margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--border-subtle); }
+        .control-group:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .control-group h3 { font-size: 0.875rem; font-weight: 600; margin-bottom: 10px; color: var(--text-primary); }
+
+        .color-palette { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+
+        .color-option {
+            width: 26px; height: 26px; border-radius: 50%; cursor: pointer;
+            border: 2px solid transparent;
+            transition: transform var(--transition), border-color var(--transition);
+        }
+
+        .color-option:hover { transform: scale(1.12); }
+        .color-option.selected { border-color: var(--accent); transform: scale(1.12); box-shadow: 0 0 0 2px var(--accent-dim); }
+
+        .position-controls { display: flex; gap: 6px; margin-bottom: 6px; }
+        .position-controls button { flex: 1; padding: 8px; min-height: 38px; font-size: 0.78rem; }
+
+        .template-preview { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; margin-bottom: 8px; }
+
+        .template-item {
+            width: 52px; height: 42px;
+            border: 2px solid var(--border-subtle); border-radius: var(--radius-sm);
+            cursor: pointer; overflow: hidden; position: relative;
+            transition: transform var(--transition), border-color var(--transition);
+            background: var(--bg-input);
+        }
+
+        .template-item:hover { transform: scale(1.05); border-color: var(--border-strong); }
+        .template-item.selected { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-dim); }
+        .template-item img { width: 100%; height: 100%; object-fit: contain; }
+
+        .text-style { display: flex; gap: 6px; margin-bottom: 8px; }
+        .text-style button { padding: 6px; flex: 1; margin-bottom: 0; min-height: 36px; font-size: 0.78rem; }
+
+        .upload-btn { position: relative; overflow: hidden; }
+        .upload-btn input { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; min-height: unset; }
+
         .preview-remove {
-            position: absolute;
-            top: 2px;
-            right: 2px;
-            width: 16px;
-            height: 16px;
-            background: rgba(255,0,0,0.8);
-            color: white;
-            border-radius: 50%;
-            font-size: 10px;
+            position: absolute; top: 2px; right: 2px;
+            width: 16px; height: 16px;
+            background: rgba(248, 113, 113, 0.9); color: white;
+            border-radius: 50%; font-size: 10px;
+            display: none; align-items: center; justify-content: center;
+            cursor: pointer; z-index: 10;
+        }
+
+        .template-item:hover .preview-remove { display: flex; }
+
+        .size-controls { margin-top: 8px; display: none; }
+        .size-controls.show { display: block; }
+        .size-inputs { display: flex; gap: 8px; margin-bottom: 8px; }
+        .size-inputs input, .size-inputs select { flex: 1; padding: 8px; }
+
+        .qrcode-controls { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-subtle); }
+        .qrcode-controls textarea { height: 80px; margin-bottom: 8px; }
+
+        .element-actions { display: flex; gap: 6px; margin-bottom: 8px; }
+        .element-actions button { flex: 1; padding: 8px; font-size: 0.78rem; min-height: 38px; }
+
+        .shape-params { display: none; gap: 6px; margin-bottom: 8px; }
+        .shape-params.show { display: flex; }
+        .shape-params input { flex: 1; padding: 8px; }
+
+        .icon-preview { font-size: 24px; text-align: center; margin: 5px 0; }
+
+        .icon-materials-container {
+            max-height: 200px; overflow-y: auto; padding: 8px;
+            border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
+            margin-bottom: 10px; background: var(--bg-input);
+        }
+
+        .rotate-controls { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .rotate-controls input { flex: 2; }
+        .rotate-controls button { flex: 1; }
+
+        .bg-color-selector { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+
+        .bg-color-picker {
+            width: 40px; height: 32px;
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-sm); cursor: pointer; padding: 2px;
+        }
+
+        .bg-color-value { flex: 1; font-size: 0.78rem; font-family: "JetBrains Mono", monospace; color: var(--text-secondary); }
+
+        .local-image-btn {
+            background: var(--teal-dim) !important;
+            color: var(--teal) !important;
+            border: 1px solid color-mix(in srgb, var(--teal) 35%, transparent) !important;
+            box-shadow: none !important;
+        }
+
+        .local-image-btn:hover:not(:disabled) {
+            background: color-mix(in srgb, var(--teal) 18%, var(--teal-dim)) !important;
+        }
+
+        /* ── Zalo group banner (hoantien.dev) ── */
+        .zalo-banner {
+            position: sticky;
+            top: var(--header-h);
+            z-index: 95;
+            background: linear-gradient(90deg, rgba(0, 104, 255, 0.1) 0%, rgba(0, 104, 255, 0.04) 100%);
+            border-bottom: 1px solid color-mix(in srgb, #0068ff 28%, var(--border));
+        }
+
+        :root[data-theme="dark"] .zalo-banner {
+            background: linear-gradient(90deg, rgba(0, 104, 255, 0.18) 0%, rgba(0, 104, 255, 0.06) 100%);
+        }
+
+        .zalo-banner-glow { display: none; }
+
+        .zalo-banner-inner {
+            position: relative;
+            z-index: 1;
+            max-width: var(--layout-max);
+            margin: 0 auto;
+            padding: 10px 20px;
             display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .zalo-banner-mark { flex: 0 0 52px; width: 52px; height: 52px; }
+
+        .zalo-banner-logo {
+            display: block;
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            box-shadow: 0 4px 16px rgba(0, 104, 255, 0.35);
+        }
+
+        .zalo-banner-copy { flex: 1; min-width: 0; }
+
+        .zalo-banner-eyebrow {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 0 0 4px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #4da3ff;
+        }
+
+        .zalo-banner-hot {
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
-            display: none;
-            z-index: 10;
+            padding: 3px 8px;
+            border-radius: 999px;
+            font-size: 0.62rem;
+            font-weight: 800;
+            letter-spacing: 0.1em;
+            line-height: 1;
+            color: #fff;
+            background: linear-gradient(135deg, #ee4d2d 0%, #ff6633 100%);
+            box-shadow: 0 2px 10px rgba(238, 77, 45, 0.45);
         }
-        .template-item:hover .preview-remove {
-            display: flex;
+
+        .zalo-banner-text {
+            margin: 0;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            line-height: 1.45;
+            font-weight: 500;
         }
-        /* Size adjustment controls */
-        .size-controls {
-            margin-top: 8px;
-            display: none;
-        }
-        .size-controls.show {
-            display: block;
-        }
-        .size-inputs {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 8px;
-        }
-        .size-inputs input {
-            flex: 1;
-            padding: 6px;
-        }
-        /* QR code generation controls */
-        .qrcode-controls {
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid #eee;
-        }
-        .qrcode-controls textarea {
-            height: 80px;
-            margin-bottom: 8px;
-        }
-        /* Element action buttons */
-        .element-actions {
-            display: flex;
-            gap: 5px;
-            margin-bottom: 8px;
-        }
-        .element-actions button {
-            flex: 1;
-            padding: 6px;
-            font-size: 12px;
-        }
-        /* Shape parameter controls */
-        .shape-params {
-            display: none;
-            gap: 5px;
-            margin-bottom: 8px;
-        }
-        .shape-params.show {
-            display: flex;
-        }
-        .shape-params input {
-            flex: 1;
-            padding: 6px;
-        }
-        .icon-preview {
-            font-size: 24px;
-            text-align: center;
-            margin: 5px 0;
-        }
-        /* Icon asset container */
-        .icon-materials-container {
-            max-height: 200px;
-            overflow-y: auto;
-            padding: 5px;
-            border: 1px solid #eee;
-            border-radius: 4px;
-            margin-bottom: 10px;
-        }
-        /* Rotation controls */
-        .rotate-controls {
-            display: flex;
+
+        .zalo-banner-text strong { font-weight: 800; }
+
+        .zalo-banner-btn {
+            display: inline-flex;
             align-items: center;
-            gap: 8px;
-            margin-bottom: 8px;
+            justify-content: center;
+            flex-shrink: 0;
+            padding: 10px 18px;
+            border-radius: 999px;
+            font-size: 0.88rem;
+            font-weight: 800;
+            color: #fff !important;
+            background: #0068ff;
+            box-shadow: 0 4px 16px rgba(0, 104, 255, 0.35);
+            white-space: nowrap;
+            text-decoration: none;
+            transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+            min-height: unset;
+            flex: unset;
         }
-        .rotate-controls input {
-            flex: 2;
+
+        .zalo-banner-btn:hover {
+            transform: translateY(-1px);
+            background: #0084ff;
+            box-shadow: 0 6px 20px rgba(0, 104, 255, 0.45);
+            color: #fff !important;
         }
-        .rotate-controls button {
-            flex: 1;
+
+        .options .option-item { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .options input[type="checkbox"] { width: auto; min-height: unset; }
+
+        .btn-action {
+            display: inline-flex; align-items: center; padding: 8px 12px;
+            border-radius: var(--radius-sm);
+            background: var(--success-dim); color: var(--success);
+            font-size: 0.82rem; font-weight: 600;
         }
-        /* Background color selection */
-        .bg-color-selector {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 8px;
+
+        @media (min-width: 768px) {
+            .main-content { flex-direction: row; }
+            .input-section { flex: 1; }
+            .preview-section { flex: 1; }
+            .button-group button { flex: 1 1 calc(33.333% - 6px); }
+            .tab-button { flex-direction: row; gap: 8px; font-size: 0.875rem; min-height: 48px; }
         }
-        .bg-color-picker {
-            width: 40px;
-            height: 30px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            cursor: pointer;
-            padding: 2px;
+
+        @media (max-width: 767px) {
+            .panel-editor-workspace .canvas-container,
+            .panel-editor-workspace .control-panel {
+                flex: 1 1 100%;
+                width: 100%;
+            }
+
+            .control-grid { grid-template-columns: 1fr; }
         }
-        .bg-color-value {
-            flex: 1;
-            font-size: 12px;
+
+        @media (max-width: 640px) {
+            .header-inner { flex-wrap: wrap; height: auto; padding: 10px 14px; }
+            .header-actions { width: 100%; justify-content: space-between; }
+            .ble-status { flex: 1; justify-content: center; }
+            .tab-buttons { grid-template-columns: repeat(2, 1fr); border-radius: var(--radius); }
+            .tab-label { font-size: 0.72rem; }
+            .button-group button { flex: 1 1 100%; }
+            #canvas { min-width: 0; max-width: 100%; }
+            .zalo-banner-inner {
+                padding: 12px 14px;
+                gap: 10px;
+                flex-wrap: wrap;
+                align-items: flex-start;
+            }
+            .zalo-banner-mark { flex: 0 0 46px; width: 46px; height: 46px; }
+            .zalo-banner-logo { width: 46px; height: 46px; border-radius: 12px; }
+            .zalo-banner-copy { flex: 1 1 calc(100% - 56px); min-width: 0; }
+            .zalo-banner-btn { flex: 1 1 100%; width: 100%; padding: 12px 18px; }
+            :root { --banner-h: 120px; }
         }
-        /* Local image icon */
-        .local-image-btn {
-            background-color: #9c27b0;
+
+        @media (max-width: 480px) {
+            .app-main { padding: 0 10px 20px; }
+            button { font-size: 0.82rem; padding: 9px 12px; }
         }
-        .local-image-btn:hover {
-            background-color: #7b1fa2;
-        }
+
     </style>
+
 
     <!-- dithering.js not in repo -->
     <!-- utils.js not in repo -->
 </head>
 
-<body>
-   
+<body class="ble-disconnected">
+    <header class="app-header">
+        <div class="header-inner">
+            <div class="header-brand">
+                <span class="brand-mark header-icon" aria-hidden="true">EP</span>
+                <div>
+                    <h1>E-Paper Tag</h1>
+                    <span class="brand-sub">Điều khiển Bluetooth · hoantien.dev</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <div class="ble-status" id="ble-status" role="status" aria-live="polite">
+                    <span class="status-dot" id="status-dot"></span>
+                    <span id="status">Chưa kết nối</span>
+                </div>
+                <button type="button" id="btn-theme" class="btn-theme" aria-label="Đổi giao diện">
+                    <span class="theme-icon theme-icon-moon" aria-hidden="true">🌙</span>
+                    <span class="theme-icon theme-icon-sun" aria-hidden="true">☀️</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <aside class="zalo-banner" aria-label="Tham gia nhóm Zalo">
+        <div class="zalo-banner-glow" aria-hidden="true"></div>
+        <div class="zalo-banner-inner">
+            <div class="zalo-banner-mark">
+                <svg class="zalo-banner-logo" viewBox="0 0 48 48" role="img" aria-label="Zalo">
+                    <rect width="48" height="48" rx="12" fill="#0068FF" />
+                    <text x="24" y="30" text-anchor="middle" fill="#FFFFFF" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700">Zalo</text>
+                </svg>
+            </div>
+            <div class="zalo-banner-copy">
+                <p class="zalo-banner-eyebrow">
+                    <span class="zalo-banner-hot">HOT</span>
+                    <span>Cộng đồng hoàn tiền · Miễn phí</span>
+                </p>
+                <p class="zalo-banner-text">
+                    Tham gia <strong>nhóm Zalo hoàn tiền <span class="shopee-orange">Shopee</span></strong> để nhận link hoàn tiền bạn nhé.
+                </p>
+            </div>
+            <a class="zalo-banner-btn" href="https://zalo.me/g/gosfwazgduxuvxc6w0rm" target="_blank" rel="noopener noreferrer">Tham gia nhóm →</a>
+        </div>
+    </aside>
+    <div class="app-main app-shell">
+    <div class="content">
     <div class="tabs-container">
         <div class="tab-buttons">
-            <button class="tab-button active" data-tab="tab-settings">E-Paper Settings</button>
-            <button class="tab-button" data-tab="tab-countdown">Countdown Module</button>
-            <button class="tab-button" data-tab="tab-image">Image Transfer</button>
-            <button class="tab-button" data-tab="tab-editor">Template Designer</button>
+            <button class="tab-button active" data-tab="tab-settings"><span class="tab-icon" aria-hidden="true">⚙</span><span class="tab-label">Cài đặt E-Paper</span></button>
+            <button class="tab-button" data-tab="tab-countdown"><span class="tab-icon" aria-hidden="true">⏳</span><span class="tab-label">Đếm ngược</span></button>
+            <button class="tab-button" data-tab="tab-image"><span class="tab-icon" aria-hidden="true">🖼</span><span class="tab-label">Truyền hình ảnh</span></button>
+            <button class="tab-button" data-tab="tab-editor"><span class="tab-icon" aria-hidden="true">✎</span><span class="tab-label">Thiết kế mẫu</span></button>
         </div>
     </div>
 
    
     <div id="tab-settings" class="tab-content active">
-        <h2>E-Paper Bluetooth Controller - Connect device first before setting clock</h2>
+        <h2 class="page-title">Cài đặt E-Paper</h2>
+        <p class="page-desc">Kết nối thiết bị qua Bluetooth trước khi gửi lệnh điều khiển đồng hồ hoặc màn hình.</p>
+
+        <section class="panel">
+            <div class="panel-header">
+                <div class="panel-icon" aria-hidden="true">📶</div>
+                <div>
+                    <div class="panel-title">Kết nối Bluetooth</div>
+                    <div class="panel-subtitle">Quét và kết nối thiết bị E-Paper</div>
+                </div>
+            </div>
+            <div class="button-group">
+                <button id="connectbutton" type="button" onclick="preConnect();">Quét thiết bị</button>
+                <button type="button" onclick="reConnect();">Kết nối lại</button>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="panel-header">
+                <div class="panel-icon" aria-hidden="true">🕐</div>
+                <div>
+                    <div class="panel-title">Đồng hồ &amp; chế độ hiển thị</div>
+                </div>
+            </div>
+            <div class="form-row">
+                <button id="time-setter" class="ble-action" onclick="setTime()">Đặt giờ</button>
+                <div class="inline-field">
+                    <label for="hour-offset">Múi giờ (offset giờ)</label>
+                    <input type="number" max="24" min="0" id="hour-offset" value="7">
+                </div>
+            </div>
+
+            <div class="button-group">
+                        <button type="button" class="ble-action" onclick="setri('e102')" title="Bấm để chuyển sang chế độ đồng hồ">Chế độ đồng hồ</button>
+            <button type="button" class="ble-action" onclick="setri('e101')" title="Bấm để chuyển sang chế độ lịch">Chế độ lịch</button>
+
+            <button type="button" class="ble-action" onclick="setri('e4')" title="Bấm để đổi màu đồng hồ">Đổi màu đồng hồ</button>
+            <button type="button" class="ble-action" onclick="triggerRxTxCmd('e100')" title="Bấm để hiển thị hình ảnh vừa tải lên màn hình">Chế độ hình ảnh</button>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="panel-header">
+                <div class="panel-icon" aria-hidden="true">🔧</div>
+                <div><div class="panel-title">Hiệu chuẩn &amp; làm mới</div></div>
+            </div>
+            <div class="button-group">
+            <button type="button" class="ble-action" onclick="triggerRxTxCmd('e3')" title="Bấm để đảo màu đen/trắng">Đảo màu đen/trắng</button>
+            <button type="button" onclick="triggerRxTxCmd('e5')" class="ble-action" title="Bấm để lật màn hình">Xoay màn hình 180°</button>
+            <input type="text" id="cmdlut_red" placeholder="Hiệu chuẩn làm mới một phần màu đỏ (hex 01-0f). Tắt đỏ và hiệu chuẩn đen (10-f0). Giá trị cao hơn = tối hơn" value="">
+            <button class="ble-action" onclick="triggerEpdRed_lut(document.getElementById('cmdlut_red').value)">Đặt hiệu chuẩn làm mới một phần (cũng là ô nhập lệnh)</button>
+            <button type="button" onclick="triggerRxTxCmd('E2')" class="ble-action" title="Không phản hồi? Bấm làm mới">(Không phản hồi? Bấm) Làm mới</button>
+            <button type="button" onclick="triggerRxTxCmd('AA')" class="ble-action" title="Gửi lệnh AA qua RxTx">Gửi AA</button>
+            <button type="button" onclick="triggerRxTxCmd('E5')" class="ble-action" title="Gửi lệnh AB qua RxTx">Gửi AB</button>
+        </div>
         
-       
-        <div class="button-group">
-            <button id="connectbutton" type="button" onclick="preConnect();">Scan Devices</button>
-            <button type="button" onclick="reConnect();">Reconnect</button>
-            <button type="button" onclick="document.getElementById('log').innerHTML = '';">Clear Logs</button>
-        </div>
+        </section>
 
-        
-        <div class="button-group">
-            <button id="time-setter" onclick="setTime()">Set Time: </button> <br>
-            <input type="number" max="24" min="0" id="hour-offset" value="0" style="width: 40px;">
-        </div>
-
-        <div class="button-group">
-                        <button type="button" onclick="setri('e102')" title="Click to switch to clock mode">Switch to Clock Mode</button>
-            <button type="button" onclick="setri('e101')" title="Click to switch to calendar mode">Switch to Calendar Mode</button>
-
-            <button type="button" onclick="setri('e4')" title="Click to toggle clock color">Toggle Clock Color</button>
-            <button type="button" onclick="triggerRxTxCmd('e100')" title="Click to display last uploaded image permanently on screen">Set Image Mode</button>
-        </div>
-
-        <div class="button-group">
-            <button type="button" onclick="triggerRxTxCmd('e3')" title="Click to set inverse color mode">Toggle B&W Color Inversion</button>
-            <button type="button" onclick="triggerRxTxCmd('e5')" title="Click to flip screen mode">Rotate Screen 180 deg</button>
-            <input type="text" id="cmdlut_red" placeholder="Calibrate red partial refresh (hex 01-0f). Disable red and calibrate black (10-f0). Higher = darker" value="">
-            <button onclick="triggerEpdRed_lut(document.getElementById('cmdlut_red').value)">Set Partial Refresh Calibration (also command input)</button>
-            <button type="button" onclick="triggerRxTxCmd('E2')" title="(No response? Click) Refresh">(No response? Click) Refresh</button>
-            <button type="button" onclick="triggerRxTxCmd('AA')" title="Send command AA via RxTx">Send AA</button>
-            <button type="button" onclick="triggerRxTxCmd('E5')" title="Send command AB via RxTx">Send AB</button>
-        </div>
-        
-         <div class="button-group">
-           <label class="btn-action bg-emerald-600 text-white flex-1 sm:flex-auto ">Start Hour:</label>
-            <input type="number" id="D_S_hour" value="0" min="0" max="23">
-            <label class="btn-action bg-emerald-600 text-white flex-1 sm:flex-auto ">End Hour:</label>
-            <input type="number" id="D_S_min" value="0" min="0" max="59">
-            <button type="button" onclick="triggerRxTxCmd_XM('FB01')" title="Click to enable no-refresh during time interval">Enable Sleep (no refresh during white screen interval)</button>
-            <button type="button" onclick="triggerRxTxCmd_XM('FB00')" title="Click to disable no-refresh during time interval">Disable Sleep (screen refreshes during white screen hours)Power Save + Repair)</button>
+        <section class="panel">
+            <div class="panel-header">
+                <div class="panel-icon" aria-hidden="true">🌙</div>
+                <div><div class="panel-title">Ngủ &amp; tiết kiệm pin</div></div>
+            </div>
+            <div class="form-row">
+           <div class="inline-field"><label for="D_S_hour">Giờ bắt đầu</label>
+            <input type="number" id="D_S_hour" value="0" min="0" max="23"></div>
+            <div class="inline-field"><label for="D_S_min">Giờ kết thúc</label>
+            <input type="number" id="D_S_min" value="0" min="0" max="59"></div></div>
+            <div class="button-group">
+            <button type="button" onclick="triggerRxTxCmd_XM('FB01')" class="ble-action" title="Bấm để bật không làm mới trong khoảng thời gian">Bật ngủ (không làm mới khi màn hình trắng)</button>
+            <button type="button" onclick="triggerRxTxCmd_XM('FB00')" class="ble-action" title="Bấm để tắt chế độ ngủ">Tắt ngủ (làm mới trong giờ màn hình trắng) Tiết kiệm pin + Sửa chữa)</button>
         </div> 
         <!-- <div class="button-group">
             Set LED Color<select id="led_color" title="Set LED Color">
@@ -711,25 +1061,43 @@
             <button type="button" onclick="triggerRxTxCmd_LED('e700')" title="Click to disable alarm">Disable Alarm</button>
         </div> -->
 
-        <div class="button-group">
-            2.13" low-res clock parking sign - Enter number:<input type="text" id="CP" placeholder="Number:" value="">
-            <button onclick="triggerEpdCHEPAI(document.getElementById('CP').value)">Set Number Display</button>
-        </div>
+        </section>
+
+        <section class="panel">
+            <div class="panel-header">
+                <div class="panel-icon" aria-hidden="true">🅿</div>
+                <div><div class="panel-title">Bảng số đỗ xe 2.13"</div></div>
+            </div>
+            <div class="form-row">
+                <div class="inline-field" style="flex:2"><label for="CP">Nhập số</label>
+                <input type="text" id="CP" placeholder="Số:" value=""></div>
+                <button class="ble-action" onclick="triggerEpdCHEPAI(document.getElementById('CP').value)">Hiển thị số</button>
+            </div>
+        </section>
 
         
 
-        <div class="button-group">
-            Activate (not needed if display is working):<input type="text" id="cmdJH" placeholder="Enter activation code:" value="">
-            <button onclick="triggerEpdJH(document.getElementById('cmdJH').value)">Activate</button>
-        </div>
+        <section class="panel">
+            <div class="panel-header">
+                <div class="panel-icon" aria-hidden="true">🔑</div>
+                <div><div class="panel-title">Kích hoạt thiết bị</div>
+                <div class="panel-subtitle">Không cần nếu màn hình đã hoạt động</div></div>
+            </div>
+            <div class="form-row">
+                <div class="inline-field" style="flex:2"><label for="cmdJH">Mã kích hoạt</label>
+                <input type="text" id="cmdJH" placeholder="Nhập mã kích hoạt:" value=""></div>
+                <button class="ble-action" onclick="triggerEpdJH(document.getElementById('cmdJH').value)">Kích hoạt</button>
+            </div>
+        </section>
     </div>
 
    
     <div id="tab-countdown" class="tab-content">
          <section class="date-picker-section">
-        <h2>Countdown Date Picker - Select to apply</h2>
+        <h2 class="page-title">Đếm ngược</h2>
+        <p class="page-desc">Chọn ngày mục tiêu và tùy chỉnh văn bản hiển thị trên màn hình E-Paper.</p>
         <div class="date-picker-container">
-            <label for="datePicker">Select a date:</label>
+            <label for="datePicker">Chọn ngày:</label>
             <input type="date" id="datePicker">
 
         </div>
@@ -738,27 +1106,29 @@
     <div class="main-content">
         <div class="input-section">
             <div class="section-title">
-                <i>Settings</i> Input Settings
+                <i>Cài đặt</i> Nhập liệu
             </div>
 
             <div class="input-group">
-                <label for="textInput">Enter text (max 8 chars)</label>
-                <input type="text" id="textInput" maxlength="8" value="Days until" placeholder="Enter 1-8 characters">
+                <label for="textInput">Nhập văn bản (tối đa 8 ký tự)</label>
+                <input type="text" id="textInput" maxlength="8" value="Con lai" placeholder="Nhập 1-8 ký tự">
             </div>
                         <div class="input-group">
-                <label>Countdown Interface</label>
-                <div style="padding: 0.9rem 1rem; border-radius: 14px; background: #f3f4f6; color: #374151; font-weight: 600;">Clock Countdown</div>
+                <label>Giao diện đếm ngược</label>
+                <div class="theme-badge">Đếm ngược đồng hồ</div>
             </div>
             <div class="input-group" style="display:none">
-                <label for="gridSizeSelect">Countdown Interface</label>
+                <label for="gridSizeSelect">Giao diện đếm ngược</label>
                 <select id="gridSizeSelect">
-                    <option value="16" selected>Clock Countdown Interface</option>
+                    <option value="16" selected>Giao diện đếm ngược đồng hồ</option>
                 </select>
                 <div><span id="currentGridSize"></span></div>
             </div>
             <div class="input-group">
-                <label for="fontFamily">Font Selection (desktop only)</label>
+                <label for="fontFamily">Chọn phông chữ (chỉ máy tính)</label>
                 <select id="fontFamily">
+                    <option value="Be Vietnam Pro">Be Vietnam Pro</option>
+                    <option value="Noto Sans">Noto Sans</option>
                     <option value="Arial">Arial</option>
                     <option value="SimSun" selected="">SimSun</option>
                     <option value="Microsoft YaHei">Microsoft YaHei</option>
@@ -768,22 +1138,22 @@
             </div>
 
             <div class="input-group">
-                <label for="fontSizeSlider">Font Size (50%-150%)</label>
+                <label for="fontSizeSlider">Cỡ chữ (50%-150%)</label>
                 <div class="slider-container">
                     <input type="range" id="fontSizeSlider" min="50" max="150" value="100">
                     <span class="slider-value" id="fontSizeValue">100%</span>
                 </div>
-                <small style="color: #7f8c8d;">Adjust font display ratio. Too large may truncate characters</small>
+                <small style="color: #7f8c8d;">Điều chỉnh tỷ lệ hiển thị chữ. Quá lớn có thể cắt ký tự</small>
             </div>
 
             <div class="options" style="display:none">
                 <div class="option-item">
                     <input type="checkbox" id="invertColors" checked="">
-                    <label for="invertColors">Invert Colors</label>
+                    <label for="invertColors">Đảo màu</label>
                 </div>
                 <div class="option-item" style="display:none">
                     <input type="checkbox" id="showGrid" checked="">
-                    <label for="showGrid">Show Grid</label>
+                    <label for="showGrid">Hiện lưới</label>
                 </div>
             </div>
             <div class="preview-container">
@@ -793,54 +1163,46 @@
 
         </div>
 
-       
-
-            
-
-       
-
+        <div class="button-row-actions">
+        <button id="generateBtn" class="ble-action">Bắt đầu đếm ngược</button>
+        <button class="copy-btn ble-action" id="copyBtn">Dừng đếm ngược</button>
         </div>
-
-        <button id="generateBtn">Start Countdown</button>
-
-        <button class="copy-btn" id="copyBtn">Stop Countdown</button>
     </div>
     </div>
 
-    </div>
-
-   
     <div id="tab-image" class="tab-content">
-        <h3>Upload Image to Screen</h3>
-        <div class="button-group">
-            <input type="file" id="image_file" onchange="update_image1()" accept=".png,.jpg,.bmp,.webp,.jpeg">
-        </div>
-        <div class="button-group">
-            Screen Size:
+        <h2 class="page-title">Truyền hình ảnh</h2>
+        <p class="page-desc">Tải ảnh, điều chỉnh dithering và gửi lên màn hình E-Paper.</p>
+        <section class="panel">
+            <div class="panel-header"><div class="panel-icon" aria-hidden="true">📁</div><div><div class="panel-title">Nguồn ảnh</div></div></div>
+            <div class="input-group"><label for="image_file">Chọn tệp hình ảnh</label>
+            <input type="file" id="image_file" onchange="update_image1()" accept=".png,.jpg,.bmp,.webp,.jpeg"></div>
+        </section>
+        <section class="panel">
+            <div class="panel-header"><div class="panel-icon" aria-hidden="true">⚙</div><div><div class="panel-title">Cấu hình xử lý</div></div></div>
+            <div class="control-grid">
+            <div class="inline-field"><label for="screen-size">Kích thước màn hình</label>
             <select id="screen-size" onchange="updateCanvasSize()">
-                <option value="4.2ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¼ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¥ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂºÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¾">4.2" Transfer</option>
-                <option value="ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¦ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¥ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¥ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¥ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¥ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂºÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¾">4.2" Calendar Small</option>
-                <option value="7.5ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¼ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¥ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂºÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¾">7.5" Transfer</option>
-                <option value="7.5ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¦ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¥ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¥ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¥ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¥ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂºÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¾">7.5" Calendar Small</option>
-                <option value="2.9ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¼ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¥ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂºÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¾">2.9" Transfer</option>
-                <option value="2.13ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¼ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¥ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂºÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¾">2.13" 212x104</option>
-                <option value="2.13ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â«ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¹ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¥ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¹ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¼ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¥ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂºÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¾">2.13" 250x144</option>
-            </select>
-        </div>
-
-        <div class="button-group">
-            Dithering Algorithm:
-            <select id="dithering" title="Dithering algorithm">
-                <optgroup label="Black/White/Red Tricolor">
-                    <option value="bwr_none">BWR No Dithering</option>
+                <option value="4.2-transfer">4.2" Truyền ảnh</option>
+                <option value="4.2-calendar-small">4.2" Lịch nhỏ</option>
+                <option value="7.5-transfer">7.5" Truyền ảnh</option>
+                <option value="7.5-calendar-small">7.5" Lịch nhỏ</option>
+                <option value="2.9-transfer">2.9" Truyền ảnh</option>
+                <option value="2.13-212x104">2.13" 212x104</option>
+                <option value="2.13-250x144">2.13" 250x144</option>
+            </select></div>
+            <div class="inline-field"><label for="dithering">Thuật toán dithering</label>
+            <select id="dithering" title="Thuật toán dithering">
+                <optgroup label="Ba màu Đen/Trắng/Đỏ">
+                    <option value="bwr_none">BWR Không dithering</option>
                     <option value="bwr_floydsteinberg">BWR Floyd-Steinberg</option>
                     <option value="bwr_atkinson">BWR Atkinson</option>
                     <option value="bwr_bayer">BWR Bayer</option>
                     <option value="bwr_stucki">BWR Stucki</option>
                     <option value="bwr_jarvis">BWR Jarvis-Judice-Ninke</option>
                 </optgroup>
-                <optgroup label="Black & White">
-                    <option value="none">No Dithering</option>
+                <optgroup label="Đen & Trắng">
+                    <option value="none">Không dithering</option>
                     <option value="floydsteinberg">Floyd-Steinberg</option>
                     <option value="atkinson">Atkinson</option>
                     <option value="bayer">Bayer</option>
@@ -850,141 +1212,152 @@
             </select>
         </div>
 
-        <div class="button-group">
-            Threshold (B&W mode):<input type="range" max="255" min="10" value="125" id="threshold">
-        </div>
-           Rotation:<span id="rotationValue">0 deg</span><input type="range" id="rotationSlider" min="0" max="360" value="0" oninput="updateRotation(this.value)">
-        <label>Scale: <span id="scaleValue">100%</span></label>
-        <input type="range" id="scaleSlider" min="10" max="500" value="100" oninput="updateScale(this.value)">
-        
+            <div class="inline-field"><label for="threshold">Ngưỡng (đen trắng)</label>
+            <input type="range" max="255" min="10" value="125" id="threshold"></div>
+            <div class="inline-field"><label for="rotationSlider">Xoay <span id="rotationValue">0°</span></label>
+            <input type="range" id="rotationSlider" min="0" max="360" value="0" oninput="updateRotation(this.value)"></div>
+            <div class="inline-field"><label for="scaleSlider">Tỷ lệ <span id="scaleValue">100%</span></label>
+            <input type="range" id="scaleSlider" min="10" max="500" value="100" oninput="updateScale(this.value)"></div>
+            </div>
+        </section>
 
+        <section class="panel panel-image-workspace">
+            <div class="panel-header"><div class="panel-icon" aria-hidden="true">🖼</div><div><div class="panel-title">Xem trước &amp; thao tác</div><div class="panel-subtitle">Điều chỉnh vị trí, xoay và xem trước trước khi gửi</div></div></div>
         <div class="button-group">
-            <button onclick="update_image()">Reload</button>
-            <button onclick="stretchToCanvas()">Stretch to Screen</button>
-            <button onclick="fitToCanvas()">Fit to Screen</button>
-            <button onclick="updateScale('100')">Reset to 100%</button>
-            <button onclick="rotateImage(90)">Rotate CW 90 deg</button>
-            <button onclick="rotateImage(-90)">Rotate CCW 90 deg</button>
-            <button onclick="rotateImage(0)">Reset Rotation</button>
+            <button onclick="update_image()">Tải lại</button>
+            <button onclick="stretchToCanvas()">Kéo giãn vừa màn hình</button>
+            <button onclick="fitToCanvas()">Vừa khít màn hình</button>
+            <button onclick="updateScale('100')">Đặt lại 100%</button>
+            <button onclick="rotateImage(90)">Xoay 90° theo chiều kim đồng hồ</button>
+            <button onclick="rotateImage(-90)">Xoay 90° ngược chiều kim đồng hồ</button>
+            <button onclick="rotateImage(0)">Đặt lại góc xoay</button>
         </div>
 
-      
         <div id="canvas-box">
             <canvas id="canvas" style="border: black solid 1px;"></canvas>
         </div>
+        </section>
 
        
-        <div class="image-adjustments">
-            <h3>Image Adjustment</h3>
+        <section class="panel">
+            <div class="panel-header"><div class="panel-icon" aria-hidden="true">🎨</div><div><div class="panel-title">Điều chỉnh hình ảnh</div><div class="panel-subtitle">Độ sáng, tương phản, bão hòa và khuếch tán</div></div></div>
             <div class="adjustment-row">
-                <label for="brightness">Brightness:</label>  
+                <label for="brightness">Độ sáng:</label>  
                 <span class="adjustment-value" id="brightnessValue">100</span>
                 <input type="range" id="brightness" min="-100" max="100" value="0">
               
             </div>
             <div class="adjustment-row">
-                <label for="contrast">Contrast:</label>
+                <label for="contrast">Độ tương phản:</label>
                  <span class="adjustment-value" id="contrastValue">100</span>
                 <input type="range" id="contrast" min="0" max="200" value="100">
                
             </div>
             <div class="adjustment-row">
-                <label for="saturation">Saturation:</label>
+                <label for="saturation">Độ bão hòa:</label>
                  <span class="adjustment-value" id="saturationValue">100</span>
                 <input type="range" id="saturation" min="0" max="200" value="100">
                
             </div>
             <div class="adjustment-row">
-                <label for="diffusion">Diffusion Strength:</label>
+                <label for="diffusion">Cường độ khuếch tán:</label>
                  <span class="adjustment-value" id="diffusionValue">50</span>
                 <input type="range" id="diffusion" min="0" max="100" value="50">
                
             </div>
             <div class="button-group">
-                <button onclick="update_image()">ApplyImage Adjustment</button>
-                <button onclick="upload_image()" style="font-weight: bold">Upload to Screen Now</button>
+                <button onclick="update_image()">Áp dụng điều chỉnh hình ảnh</button>
+                <button class="ble-action" onclick="upload_image()" style="font-weight: bold">Tải lên màn hình ngay</button>
             </div>
-        </div>
+        </section>
         
     </div>
 
    
     <div id="tab-editor" class="tab-content">
-       
-       <div class="editor-container">
-        
-          <div class="canvas-container">
-            <canvas id="canvas_YS" width="600" height="450"></canvas>
-        </div>
+        <h2 class="page-title">Thiết kế mẫu</h2>
+        <p class="page-desc">Thiết kế bố cục trên canvas và áp dụng sang tab truyền ảnh.</p>
 
-
-        <div class="control-panel">
-            
-            <div class="control-group size-controls1" id="size-controls">
-                <h3>Set element width & height</h3>
-                <div class="size-inputs">
-                    <input type="number" id="width-input" placeholder="Width" min="10" max="400" value="40">
-                    <input type="number" id="height-input" placeholder="Height" min="10" max="300" value="40">
-                </div>
-                <button id="apply-size">ApplySize</button>
-            </div>
-      <br>
-         
-            <div class="control-group" id="rotate-controls1" >
-                <h3>Rotate Element</h3>
-                <div class="rotate-controls">
-                    <input type="range" id="rotation-input" min="0" max="360" value="0" step="1">
-                    <span id="rotation-value">0 deg</span>
-                    <button id="apply-rotation"style="display: none;">Apply</button>
+        <section class="panel panel-editor-workspace">
+            <div class="panel-header">
+                <div class="panel-icon" aria-hidden="true">✎</div>
+                <div>
+                    <div class="panel-title">Không gian thiết kế</div>
+                    <div class="panel-subtitle">Canvas và điều khiển phần tử đang chọn</div>
                 </div>
             </div>
-            
+            <div class="editor-workspace">
+                <div class="canvas-container">
+                    <canvas id="canvas_YS" width="600" height="450"></canvas>
+                </div>
+                <div class="control-panel">
+                    <div class="control-group size-controls1" id="size-controls">
+                        <h3>Đặt chiều rộng & chiều cao phần tử</h3>
+                        <div class="size-inputs">
+                            <input type="number" id="width-input" placeholder="Rộng" min="10" max="400" value="40">
+                            <input type="number" id="height-input" placeholder="Cao" min="10" max="300" value="40">
+                        </div>
+                        <button id="apply-size">Áp dụng kích thước</button>
+                    </div>
+                    <div class="control-group" id="rotate-controls1">
+                        <h3>Xoay phần tử</h3>
+                        <div class="rotate-controls">
+                            <input type="range" id="rotation-input" min="0" max="360" value="0" step="1">
+                            <span id="rotation-value">0°</span>
+                            <button id="apply-rotation" style="display: none;">Apply</button>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <div class="element-actions">
+                            <button id="delete-element" class="danger">Xóa phần tử</button>
+                            <button id="duplicate-element" class="secondary">Sao chép phần tử</button>
+                        </div>
+                        <div class="element-actions">
+                            <button id="bring-to-front" style="display: none;">Lên trên</button>
+                            <button id="send-to-back" style="display: none;">Xuống dưới</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="panel-header">
+                <div class="panel-icon" aria-hidden="true">➕</div>
+                <div>
+                    <div class="panel-title">Thêm phần tử</div>
+                    <div class="panel-subtitle">Chọn loại và thêm vào canvas</div>
+                </div>
+            </div>
             <div class="control-group">
-              
-                <div class="element-actions">
-                    <button id="delete-element" class="danger">Delete Element</button>
-                    <button id="duplicate-element" class="secondary">Copy Element</button>
-                </div>
-                <div class="element-actions">
-                    <button id="bring-to-front"style="display: none;">To Front</button>
-                    <button id="send-to-back"style="display: none;">To Back</button>
-                </div>
-            </div>
-
-            </div>
-        </div>
-        <div class="editor-container">
-        <div class="control-panel">
-            <div class="control-group">
-                <h3>Add Element</h3>
                 <select id="element-type">
-                     <option value="image">Image/Icon</option>
-                    <option value="text">Text</option>
-                    <option value="rect">Rectangle</option>
-                    <option value="circle">Circle</option>
-                    <option value="triangle">Triangle</option>
-                    <option value="line">Line</option>
-                    <option value="star">Star</option>
-                   
-                    
+                    <option value="image">Hình/Icon</option>
+                    <option value="text">Văn bản</option>
+                    <option value="rect">Hình chữ nhật</option>
+                    <option value="circle">Hình tròn</option>
+                    <option value="triangle">Tam giác</option>
+                    <option value="line">Đường thẳng</option>
+                    <option value="star">Ngôi sao</option>
                 </select>
-                
-                
                 <div class="shape-params" id="shape-params">
-                    <input type="number" id="param1" placeholder="Params1" min="3" max="20" value="5">
-                    <input type="number" id="param2" placeholder="Params2" min="0.1" max="5" step="0.1" value="0.5">
+                    <input type="number" id="param1" placeholder="Tham số 1" min="3" max="20" value="5">
+                    <input type="number" id="param2" placeholder="Tham số 2" min="0.1" max="5" step="0.1" value="0.5">
                 </div>
-                
-                <button id="add-element">Add Element</button>
+                <button id="add-element">Thêm phần tử</button>
             </div>
+            <textarea id="text-content" placeholder="Nhập nội dung văn bản">Văn bản tùy chỉnh</textarea>
+        </section>
 
-            <textarea id="text-content" placeholder="Please enter textContent">Custom Text</textarea>
-
-       </div>    
- <div class="editor-container">
-       
- <div class="control-group">
-                <h3>Select Color</h3>
+        <section class="panel">
+            <div class="panel-header">
+                <div class="panel-icon" aria-hidden="true">🎨</div>
+                <div>
+                    <div class="panel-title">Màu sắc &amp; văn bản</div>
+                    <div class="panel-subtitle">Bảng màu, font và kiểu chữ</div>
+                </div>
+            </div>
+            <div class="control-group">
+                <h3>Chọn màu</h3>
                 <div class="color-palette">
                     <div class="color-option selected" data-color="#ffffff" style="background-color:#ffffff;border:1px solid #ccc;"></div>
                     <div class="color-option" data-color="#000000" style="background-color:#000000;"></div>
@@ -1003,12 +1376,9 @@
                     <div class="color-option" data-color="#00f5d4" style="background-color:#00f5d4;"></div>
                     <div class="color-option" data-color="#fee440" style="background-color:#fee440;"></div>
                 </div>
-                 <!-- <div class="control-group" id="text-controls" style="display: none;"> -->
-                
-               
                 <div class="size-inputs">
                     <select id="text-font">
-                      <option value="'Microsoft YaHei', 'Microsoft YaHei'">Microsoft YaHei</option>
+                        <option value="'Microsoft YaHei', 'Microsoft YaHei'">Microsoft YaHei</option>
                         <option value="'PingFang SC', 'PingFang'">PingFang (macOS/iOS)</option>
                         <option value="'Hiragino Sans GB', 'DongQingSimHei'">DongQingSimHei</option>
                         <option value="'STXihei', 'STXihei'">STXihei</option>
@@ -1023,32 +1393,21 @@
                         <option value="'YouYuan', 'YouYuan'">YouYuan</option>
                     </select>
                     <select id="text-size">
-                       
                         <option value="8">8px</option>
                         <option value="10">10px</option>
                         <option value="12">12px</option>
                         <option value="14">14px</option>
                         <option value="16" selected>16px</option>
-                       
                         <option value="20">20px</option>
-                       
                         <option value="24">24px</option>
-                        
                         <option value="28">28px</option>
-                       
                         <option value="32">32px</option>
-                        
                         <option value="40">40px</option>
-                       
                         <option value="48">48px</option>
-                       
                         <option value="56">56px</option>
                         <option value="60">60px</option>
-                       
                         <option value="68">68px</option>
-                       
                         <option value="76">76px</option>
-                       
                         <option value="84">84px</option>
                         <option value="88">88px</option>
                         <option value="120">120px</option>
@@ -1057,104 +1416,110 @@
                     </select>
                 </div>
                 <div class="text-style">
-                    <button id="text-bold">Bold</button>
-                    <button id="text-italic">Italic</button>
-                    <button id="text-underline">Underline</button>
+                    <button id="text-bold">In đậm</button>
+                    <button id="text-italic">In nghiêng</button>
+                    <button id="text-underline">Gạch chân</button>
                 </div>
-                <button id="update-text">Update Text</button>
+                <button id="update-text">Cập nhật văn bản</button>
             </div>
-            </div>
-           <div class="control-group">
-               
-                <div class="position-controls">
-                    <button id="move-up">Move Up</button>
-                </div>
-                <div class="position-controls">
-                    <button id="move-left">Move Left</button>
-                    <button id="move-down">Move Down</button>
-                    <button id="move-right">Move Right</button>
-                </div>
+        </section>
 
-                
-                <div class="qrcode-controls">
-                   
-                    <textarea id="qrcode-content" placeholder="Please enter content to generateQR Code text/URL/contact info, etc.">https://xly95.github.io/</textarea>
-                    <button id="generate-qrcode" class="secondary">GenerateQR Code</button>
+        <section class="panel">
+            <div class="panel-header">
+                <div class="panel-icon" aria-hidden="true">↔</div>
+                <div>
+                    <div class="panel-title">Vị trí &amp; mã QR</div>
+                    <div class="panel-subtitle">Di chuyển phần tử hoặc tạo mã QR</div>
                 </div>
             </div>
-   </div>      
-
-            
-<div class="editor-container">
-            
-
             <div class="control-group">
-             
-              
+                <div class="position-controls">
+                    <button id="move-up">Di chuyển lên</button>
+                </div>
+                <div class="position-controls">
+                    <button id="move-left">Di chuyển trái</button>
+                    <button id="move-down">Di chuyển xuống</button>
+                    <button id="move-right">Di chuyển phải</button>
+                </div>
+                <div class="qrcode-controls">
+                    <textarea id="qrcode-content" placeholder="Nhập nội dung để tạo mã QR: văn bản/URL/thông tin liên hệ, v.v.">https://xly95.github.io/</textarea>
+                    <button id="generate-qrcode" class="secondary">Tạo mã QR</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="panel-header">
+                <div class="panel-icon" aria-hidden="true">🖼</div>
+                <div>
+                    <div class="panel-title">Nền canvas</div>
+                    <div class="panel-subtitle">Màu nền, mẫu có sẵn hoặc tải ảnh lên</div>
+                </div>
+            </div>
+            <div class="control-group">
                 <div class="bg-color-selector">
                     <div class="bg-color-picker" id="bg-color-picker" style="background-color:#ffffff"></div>
                     <input type="color" id="bg-color-input" value="#ffffff" style="display: none">
                     <span class="bg-color-value" id="bg-color-value">#FFFFFF</span>
                     <button id="apply-bg-color">Apply</button>
                 </div>
-                
-                <div class="template-preview" id="bg-templates" >
-                    <div class="template-item selected" style="display:none"data-type="none">
-                        <div style="width:100%;height:100%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;">Solid</div>
+                <div class="template-preview" id="bg-templates">
+                    <div class="template-item selected" style="display:none" data-type="none">
+                        <div style="width:100%;height:100%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;">Màu đặc</div>
                     </div>
-                    <div class="template-item"style="display:none" data-type="memo">
-                        <div style="width:100%;height:100%;background:#f9f3d2;display:flex;align-items:center;justify-content:center;font-size:10px;">NoteMemo</div>
+                    <div class="template-item" style="display:none" data-type="memo">
+                        <div style="width:100%;height:100%;background:#f9f3d2;display:flex;align-items:center;justify-content:center;font-size:10px;">Ghi chú</div>
                     </div>
-                    <div class="template-item"style="display:none" data-type="card">
-                        <div style="width:100%;height:100%;background:#e8f4f8;display:flex;align-items:center;justify-content:center;font-size:10px;">Namecard</div>
+                    <div class="template-item" style="display:none" data-type="card">
+                        <div style="width:100%;height:100%;background:#e8f4f8;display:flex;align-items:center;justify-content:center;font-size:10px;">Danh thiếp</div>
                     </div>
-                    <div class="template-item" style="display:none"data-type="gradient1">
+                    <div class="template-item" style="display:none" data-type="gradient1">
                         <div style="width:100%;height:100%;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);display:flex;align-items:center;justify-content:center;font-size:10px;color:white;">Gradient1</div>
                     </div>
-                    <div class="template-item"style="display:none" data-type="gradient2">
+                    <div class="template-item" style="display:none" data-type="gradient2">
                         <div style="width:100%;height:100%;background:linear-gradient(135deg, #f093fb 0%, #f5576c 100%);display:flex;align-items:center;justifycontent:center;font-size:10px;color:white;">Gradient2</div>
                     </div>
-                    <div class="template-item"style="display:none" data-type="gradient3">
+                    <div class="template-item" style="display:none" data-type="gradient3">
                         <div style="width:100%;height:100%;background:linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);display:flex;align-items:center;justify-content:center;font-size:10px;color:white;">Gradient3</div>
                     </div>
-                    
-                          
-        <div class="template-item" data-type="bg_image1" data-image-url=".bg_image1.jpg">
-            <div style="width:100%;height:100%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#666;">Random</div>
-        </div>
-        <div class="template-item" data-type="bg_image2" data-image-url="./bg1.jpg">
-            <div style="width:100%;height:100%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#666;">Namecard</div>
-        </div>
-        <div class="template-item" data-type="bg_image3" data-image-url="./images/bg3.jpg">
-            <div style="width:100%;height:100%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#666;">NoteMemo</div>
-        </div>
-        <div class="template-item" data-type="bg_image4" data-image-url="./images/bg4.jpg">
-            <div style="width:100%;height:100%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#666;">ClassSchedule</div>
-        </div>
-        <div class="template-item" data-type="bg_image5" data-image-url="./images/bg5.jpg">
-            <div style="width:100%;height:100%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#666;">Items</div>
-        </div>
-         <div class="template-item" data-type="bg_image6" data-image-url="./images/bg5.jpg">
-            <div style="width:100%;height:100%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#666;">WIFI</div>
-        </div>
+                    <div class="template-item" data-type="bg_image1" data-image-url=".bg_image1.jpg">
+                        <div style="width:100%;height:100%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#666;">Ngẫu nhiên</div>
+                    </div>
+                    <div class="template-item" data-type="bg_image2" data-image-url="./bg1.jpg">
+                        <div style="width:100%;height:100%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#666;">Danh thiếp</div>
+                    </div>
+                    <div class="template-item" data-type="bg_image3" data-image-url="./images/bg3.jpg">
+                        <div style="width:100%;height:100%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#666;">Ghi chú</div>
+                    </div>
+                    <div class="template-item" data-type="bg_image4" data-image-url="./images/bg4.jpg">
+                        <div style="width:100%;height:100%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#666;">Thời khóa biểu</div>
+                    </div>
+                    <div class="template-item" data-type="bg_image5" data-image-url="./images/bg5.jpg">
+                        <div style="width:100%;height:100%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#666;">Vật phẩm</div>
+                    </div>
+                    <div class="template-item" data-type="bg_image6" data-image-url="./images/bg5.jpg">
+                        <div style="width:100%;height:100%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#666;">WIFI</div>
+                    </div>
                 </div>
                 <button class="upload-btn secondary" style="margin-bottom:8px;">
                     Upload Background Image
                     <input type="file" id="bg-upload" accept="image/*">
                 </button>
-                <button id="apply-bg" style="display:none">Apply Background</button>
-            
-
-            
-                
-               
+                <button id="apply-bg" style="display:none">Áp dụng nền</button>
             </div>
+        </section>
 
-             <div class="control-group">
-                
+        <section class="panel">
+            <div class="panel-header">
+                <div class="panel-icon" aria-hidden="true">⭐</div>
+                <div>
+                    <div class="panel-title">Thư viện icon</div>
+                    <div class="panel-subtitle">Icon có sẵn hoặc tải icon tùy chỉnh</div>
+                </div>
+            </div>
+            <div class="control-group">
                 <div class="icon-materials-container">
                     <div class="template-preview" id="image-templates">
-                        
                         <div class="template-item selected" data-type="icon1">
                             <div style="width:100%;height:100%;background:transparent;display:flex;align-items:center;justify-content:center;font-size:18px;">I1</div>
                         </div>
@@ -1232,36 +1597,56 @@
                         </div>
                     </div>
                 </div>
-                
                 <button class="upload-btn secondary" style="margin-bottom:8px;">
                     Upload Custom Icon
                     <input type="file" id="icon-upload" accept="image/*" multiple>
                 </button>
-                  <button id="save-canvas" class="secondary" >Save Canvas as Image (can restore via background upload)</button>
-                <button id="add-local-image" class="local-image-btn" style="display:none">
-                   
-                </button>
-        </div>
-  </div>
-       
-          <div class="control-group">
-                 
-              
-                <button id="clear-canvas" class="danger">Clear All Canvas Elements</button>
-                
-                 <button onclick="saveCanvasYSAndUpdateImage() ">Apply Template & Go to Transfer</button>
-            </div>  
-    </div>       
-       
+                <button id="save-canvas" class="secondary">Lưu canvas thành ảnh (có thể khôi phục qua tải ảnh nền)</button>
+                <button id="add-local-image" class="local-image-btn" style="display:none"></button>
+            </div>
+        </section>
+
+        <section class="panel editor-actions-panel">
+            <div class="panel-header">
+                <div class="panel-icon" aria-hidden="true">🚀</div>
+                <div>
+                    <div class="panel-title">Hoàn tất &amp; áp dụng</div>
+                    <div class="panel-subtitle">Xóa canvas hoặc chuyển mẫu sang tab truyền ảnh</div>
+                </div>
+            </div>
+            <div class="control-group">
+                <button id="clear-canvas" class="danger">Xóa tất cả phần tử trên canvas</button>
+                <button onclick="saveCanvasYSAndUpdateImage()">Áp dụng mẫu & chuyển sang truyền ảnh</button>
+            </div>
+        </section>
+    </div>
    
-<div id="log-box">
-            Log:
-            <br>
+<aside class="log-panel" id="log-box">
+            <div class="log-panel-header">
+                <span class="log-panel-title"><span aria-hidden="true">📋</span> Nhật ký hoạt động</span>
+                <button type="button" class="log-clear-btn" onclick="document.getElementById('log').innerHTML = '';">Xóa nhật ký</button>
+            </div>
             <div id="log"></div>
-        </div>
+        </aside>
+    </div>
+    </div>
    
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            updateBleConnectionUI(false);
+
+            var themeBtn = document.getElementById('btn-theme');
+            if (themeBtn) {
+                themeBtn.addEventListener('click', function () {
+                    var root = document.documentElement;
+                    var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+                    root.setAttribute('data-theme', next);
+                    try { localStorage.setItem('clock-theme', next); } catch (e) {}
+                    var meta = document.querySelector('meta[name="theme-color"]');
+                    if (meta) meta.content = next === 'dark' ? '#121110' : '#fffdf8';
+                });
+            }
+
             const tabButtons = document.querySelectorAll('.tab-button');
             const tabContents = document.querySelectorAll('.tab-content');
             tabButtons[0].classList.add('active');
@@ -2060,11 +2445,11 @@ document.querySelectorAll('.tab-button').forEach(function(btn) {
             if (epdCharacteristic) {
                 await epdCharacteristic.writeValueWithResponse(cmd)
             } else {
-                addLog('Service unavailable. Is Bluetooth connected?')
+                addLog('Dịch vụ không khả dụng. Bluetooth đã kết nối chưa?')
             }
         }
         async function clearScreen(cmd) {
-            addLog('Refresh screen')
+            addLog('Làm mới màn hình')
             await triggerEpdCmd(`00${cmd}`);
             await triggerEpdCmd('01')
         }
@@ -2072,7 +2457,7 @@ document.querySelectorAll('.tab-button').forEach(function(btn) {
             if (rxtxCharacteristic) {
                 await rxtxCharacteristic.writeValueWithResponse(cmd);
             } else {
-                addLog('Service unavailable. Is Bluetooth connected?')
+                addLog('Dịch vụ không khả dụng. Bluetooth đã kết nối chưa?')
             }
         }
         async function SendCommand(cmd) {
@@ -2087,12 +2472,12 @@ document.querySelectorAll('.tab-button').forEach(function(btn) {
             if (rxtxCharacteristic) {
                 await rxtxCharacteristic.writeValueWith(cmd);
             } else {
-                addLog('Service unavailable. Is Bluetooth connected?')
+                addLog('Dịch vụ không khả dụng. Bluetooth đã kết nối chưa?')
             }
         }
        
         async function sendBufferData(value, type) {
-            addLog(`Starting image send mode:${type}, size ${value.length}byte`);
+            addLog(`Bắt đầu gửi ảnh chế độ:${type}, kích thước ${value.length} byte`);
             let code = 'ff';
             if (type === 'bwr') {
                 code = '00';
@@ -2102,7 +2487,7 @@ document.querySelectorAll('.tab-button').forEach(function(btn) {
             const step = my_step;
             let partIndex = 0;
             for (let i = 0; i < value.length; i += step) {
-                addLog(`Sending block ${partIndex + 1} block. Block size: ${step / 2 + 4}byte. Start position: ${i / 2}`);
+                addLog(`Đang gửi khối ${partIndex + 1}. Kích thước khối: ${step / 2 + 4} byte. Vị trí bắt đầu: ${i / 2}`);
                 await sendCommand(hexToBytes(cod + code + intToHex(i / 2, 2) + value.substring(i, i + step)));
                 partIndex += 1;
             }
@@ -2111,35 +2496,22 @@ document.querySelectorAll('.tab-button').forEach(function(btn) {
             const sizeSelect = document.getElementById('screen-size');
             const canvas = document.getElementById('canvas');
             const ctx = canvas.getContext("2d");
-            let width, height;
-            if (sizeSelect.value == "4.2ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¼ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¥ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂºÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¾") {
-                width = 400;
-                height = 300;
-            } else if (sizeSelect.value === "2.9ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¼ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¥ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂºÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¾") {
-                width = 296;
-                height =128;
-            } else if (sizeSelect.value === "ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¦ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¥ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¥ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¥ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¥ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂºÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¾") {
-                width = 280;
-                height = 100;
-            } else if (sizeSelect.value === "7.5ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¼ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¥ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂºÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¾") {
-                width = 800;
-                height = 480;
-            } else if (sizeSelect.value === "7.5ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¦ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¥ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¥ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¥ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¥ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂºÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¾") {
-                width = 400;
-                height = 180;
-            } else if (sizeSelect.value === "2.13ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¼ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¥ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂºÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¾") {
-                width = 212;
-                height =104;
-            }else if (sizeSelect.value === "2.13ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â«ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¹ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¥ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¹ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¼ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¥ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂºÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¾") {
-               width = 250;
-                height =144;
-            }
+            const sizes = {
+                '4.2-transfer': [400, 300],
+                '4.2-calendar-small': [280, 100],
+                '7.5-transfer': [800, 480],
+                '7.5-calendar-small': [400, 180],
+                '2.9-transfer': [296, 128],
+                '2.13-212x104': [212, 104],
+                '2.13-250x144': [250, 144]
+            };
+            const [width, height] = sizes[sizeSelect.value] || sizes['4.2-transfer'];
             canvas.width = width;
             canvas.height = height;
             ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, width, height);
             update_image();
-            addLog(`Canvas size updated to: ${width}x${height}`);
+            addLog(`Đã cập nhật kích thước canvas: ${width}x${height}`);
         }
         async function upload_image() {
             const canvas = document.getElementById('canvas');
@@ -2158,48 +2530,48 @@ document.querySelectorAll('.tab-button').forEach(function(btn) {
             await delay(300);
             if (canvas.width == 280 || canvas.height == 180) { await sendCommand(hexToBytes("AA")) }
             else { await sendCommand(hexToBytes("01")) }
-            addLog(`Upload complete, time:${(new Date().getTime() - startTime) / 1000}s`);
+            addLog(`Tải lên hoàn tất, thời gian: ${(new Date().getTime() - startTime) / 1000}s`);
         }
         async function setTime() {
             const { unixNow, localeTimeString, year, month, day, week } = getUnixTime();
-            addLog("Time set to: " + localeTimeString + " : dd" + intToHex(unixNow, 4));
+            addLog("Đã đặt giờ: " + localeTimeString + " : dd" + intToHex(unixNow, 4));
             await rxTxSendCommand(hexToBytes('dd' +
                 [intToHex(unixNow, 4), intToHex(year, 2), intToHex(month, 1), intToHex(day, 1), intToHex(week, 1)].join('')));
             await rxTxSendCommand(hexToBytes('e2'))
         }
         async function setri(cmd) {
-            addLog(`Command: ${cmd}`)
+            addLog(`Lệnh: ${cmd}`)
             await rxTxSendCommand(hexToBytes(cmd));
             await delay(300);
             addLog(`Command: e2`)
             await rxTxSendCommand(hexToBytes('e2'))
         }
         async function triggerRxTxCmd(cmd) {
-            addLog(`Sending command: ${cmd}`)
+            addLog(`Đang gửi lệnh: ${cmd}`)
             await rxTxSendCommand(hexToBytes(cmd));
         }
         async function triggerRxTxCmd2(cmd) {
-            addLog(`Sending command: ${cmd}`)
+            addLog(`Đang gửi lệnh: ${cmd}`)
             await rxTxSendCommand2(hexToBytes(cmd));
         }
         async function triggerEpdCmd(cmd) {
-            addLog(`Sending command: ${cmd}`)
+            addLog(`Đang gửi lệnh: ${cmd}`)
             await sendCommand(hexToBytes(cmd));
         }
         async function triggerEpdRed_lut(cmd) {
-            addLog(`Starting red calibration: ${cmd}`)
+            addLog(`Bắt đầu hiệu chuẩn đỏ: ${cmd}`)
             cmd = 'E6' + cmd;
             await rxTxSendCommand(hexToBytes(cmd));
         }
         async function triggerEpdJH(cmd) {
-            addLog(`Activation command: ${cmd}`)
+            addLog(`Lệnh kích hoạt: ${cmd}`)
             cmd = 'EF' + cmd;
             await rxTxSendCommand(hexToBytes(cmd));
             await delay(500);
             await rxTxSendCommand(hexToBytes('e2'))
         }
         async function triggerEpdCHEPAI(cmd) {
-            addLog(`Number: ${cmd}`)
+            addLog(`Số: ${cmd}`)
             let cp = '';
             for (let index = 0; index < cmd.length; index++) {
                 cp = cp + cmd[index] + cmd[index];
@@ -2228,13 +2600,14 @@ document.querySelectorAll('.tab-button').forEach(function(btn) {
             D_S_min = D_S_min > 9 ? D_S_min : '0' + D_S_min;
            
             cmd = cmd  + D_S_hour + D_S_min;
-            addLog(`Set no-refresh time period: ${cmd}`)
+            addLog(`Đặt khoảng thời gian không làm mới: ${cmd}`)
             await rxTxSendCommand(hexToBytes(cmd));
         }
         function disconnect() {
             resetVariables();
-            addLog('Disconnected.');
-            document.getElementById("connectbutton").innerHTML = 'Scan Devices';
+            addLog('Đã ngắt kết nối.');
+            document.getElementById("connectbutton").innerHTML = 'Quét thiết bị';
+            updateBleConnectionUI(false);
         }
         async function preConnect() {
             if (gattServer != null && gattServer.connected) {
@@ -2243,15 +2616,17 @@ document.querySelectorAll('.tab-button').forEach(function(btn) {
             } else {
                 reconnectTrys = 0;
                 try {
-                    document.getElementById("connectbutton").innerHTML = 'Scanning...';
+                    document.getElementById("connectbutton").innerHTML = 'Đang quét...';
+                    updateBleConnectionUI(false, 'Đang quét...');
+                    document.getElementById('status-dot').classList.add('connecting');
                     bleDevice = await navigator.bluetooth.requestDevice({
                         acceptAllDevices: true,
                         optionalServices: ['0000221f-0000-1000-8000-00805f9b34fb', '00001f10-0000-1000-8000-00805f9b34fb', '13187b10-eba9-a3ba-044e-83d3217d9a38']
                     });
                     bleDevice.addEventListener('gattserverdisconnected', disconnect);
                 } catch (e) {
-                    document.getElementById("connectbutton").innerHTML = 'Scan Devices';
-                    addLog('Scan cancelled or failed: ' + e.message);
+                    document.getElementById("connectbutton").innerHTML = 'Quét thiết bị';
+                    addLog('Quét bị hủy hoặc thất bại: ' + e.message);
                     return;
                 }
                 try {
@@ -2263,16 +2638,16 @@ document.querySelectorAll('.tab-button').forEach(function(btn) {
         }
         async function connectRXTX() {
             rxtxService = await gattServer.getPrimaryService('00001f10-0000-1000-8000-00805f9b34fb');
-            addLog('> rxtxService Serial service found');
+            addLog('> rxtxService: Đã tìm thấy dịch vụ serial');
             rxtxCharacteristic = await rxtxService.getCharacteristic('00001f1f-0000-1000-8000-00805f9b34fb');
-            addLog('> rxtxCharacteristic Serial service connected');
+            addLog('> rxtxCharacteristic: Đã kết nối dịch vụ serial');
         }
         async function reConnect() {
             reconnectTrys = 0;
             if (bleDevice != null && bleDevice.gatt.connected)
                 bleDevice.gatt.disconnect();
             resetVariables();
-            addLog("Reconnect");
+            addLog("Kết nối lại");
             await delay(300);
             try {
                 await connect();
@@ -2282,31 +2657,49 @@ document.querySelectorAll('.tab-button').forEach(function(btn) {
         }
         async function connect() {
             if (epdCharacteristic == null) {
-                document.getElementById("connectbutton").innerHTML = 'Connecting...';
-                addLog("Connecting: " + bleDevice.name);
+                document.getElementById("connectbutton").innerHTML = 'Đang kết nối...';
+                updateBleConnectionUI(false, 'Đang kết nối...');
+                document.getElementById('status-dot').classList.add('connecting');
+                addLog("Đang kết nối: " + bleDevice.name);
                 gattServer = await bleDevice.gatt.connect();
-                addLog('> GATT server found');
+                addLog('> Đã tìm thấy máy chủ GATT');
                 await connectRXTX();
                 try {
                     epdService = await gattServer.getPrimaryService('13187b10-eba9-a3ba-044e-83d3217d9a38');
-                    addLog('> epdService Available service found');
+                    addLog('> epdService: Đã tìm thấy dịch vụ');
                     epdCharacteristic = await epdService.getCharacteristic('4b646063-6264-f3a7-8941-e65356ea82fe');
-                    addLog('> epdCharacteristic Service connected');
+                    addLog('> epdCharacteristic: Đã kết nối dịch vụ');
                     await epdCharacteristic.startNotifications();
                     epdCharacteristic.addEventListener('characteristicvaluechanged', (event) => {
                         console.log('epd ret', bytesToHex(event.target.value.buffer));
                         const count = parseInt('0x' + bytesToHex(event.target.value.buffer));
-                        addLog(`> [From screen]: Received${count} bytedata`);
+                        addLog(`> [Từ màn hình]: Nhận ${count} byte dữ liệu`);
                     });
                 } catch (e) {
-                    addLog('> epdService not found, falling back to rxtxService');
+                    addLog('> Không tìm thấy epdService, chuyển sang rxtxService');
                     epdCharacteristic = rxtxCharacteristic;
                 }
-                document.getElementById("connectbutton").innerHTML = 'Disconnect';
+                document.getElementById("connectbutton").innerHTML = 'Ngắt kết nối';
+                updateBleConnectionUI(true, 'Đã kết nối: ' + (bleDevice ? bleDevice.name : ''));
             }
         }
+        function updateBleConnectionUI(connected, label) {
+            document.body.classList.toggle('ble-connected', !!connected);
+            document.body.classList.toggle('ble-disconnected', !connected);
+            const dot = document.getElementById('status-dot');
+            const statusEl = document.getElementById('status');
+            if (dot) {
+                dot.classList.remove('connected', 'connecting');
+                if (connected) dot.classList.add('connected');
+            }
+            if (statusEl) statusEl.textContent = label || (connected ? 'Đã kết nối' : 'Chưa kết nối');
+            document.querySelectorAll('.ble-action').forEach(function(btn) {
+                btn.disabled = !connected;
+            });
+        }
         function setStatus(statusText) {
-            document.getElementById("status").innerHTML = statusText;
+            const statusEl = document.getElementById("status");
+            if (statusEl) statusEl.textContent = statusText;
         }
         function addLog(logTXT) {
             const today = new Date();
@@ -2319,9 +2712,9 @@ document.querySelectorAll('.tab-button').forEach(function(btn) {
             const hourOffset = document.getElementById('hour-offset').value;
             let unixNow = Math.round(Date.now() / 1000) + (60 * 60 * hourOffset) - new Date().getTimezoneOffset() * 60;
             const date = new Date((unixNow + new Date().getTimezoneOffset() * 60) * 1000);
-            const localeTimeString = date.toLocaleTimeString();
+            const localeTimeString = date.toLocaleTimeString('vi-VN');
             
-            // Firmware tÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â»ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â± ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¹Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â»ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ng trÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â»ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â« 1 tiÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂºÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¿ng (giÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂºÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â£ ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¹Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â»ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¹nh web UTC+8, mÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂºÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ch UTC+7). CÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â»ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ng bÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¹ 3600 giÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢y ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¹Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â»ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ mÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂºÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ch chÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂºÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡y ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¹Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âºng giÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â»ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â.
+            // Firmware cộng thêm 1 giờ. Mặc định múi giờ UTC+7 (Việt Nam); điều chỉnh hour-offset nếu cần.
             unixNow += 3600;
             
             return { unixNow, localeTimeString, year: date.getFullYear(), month: date.getMonth() + 1, day: date.getDate(), week: date.getDay() || 7 }
@@ -2432,7 +2825,7 @@ document.querySelectorAll('.tab-button').forEach(function(btn) {
         }
         function updateRotation(value) {
             currentRotation = parseInt(value);
-            document.getElementById('rotationValue').textContent = value + ' deg';
+            document.getElementById('rotationValue').textContent = value + '°';
             if (currentImage) {
                 drawImageWithRotation(currentImage);
                 update_image();
@@ -2465,7 +2858,7 @@ document.querySelectorAll('.tab-button').forEach(function(btn) {
             }
         }
         function clear_canvas() {
-            if (confirm('Confirm clear screen?')) {
+            if (confirm('Xác nhận xóa màn hình?')) {
                 const canvas = document.getElementById('canvas');
                 const ctx = canvas.getContext("2d");
                 ctx.fillStyle = 'white';
@@ -2482,7 +2875,7 @@ document.querySelectorAll('.tab-button').forEach(function(btn) {
         document.body.onload = () => {
             setInterval(() => {
                 const { localeTimeString, year, month, day, week } = getUnixTime();
-                document.getElementById('time-setter').innerText = `Set Time:${year}-${month}-${day} ${localeTimeString} Week${week}`;
+                document.getElementById('time-setter').innerText = `Đặt giờ:${year}-${month}-${day} ${localeTimeString} T${week}`;
             }, 1000);
             const canvas = document.getElementById('canvas');
             const ctx = canvas.getContext("2d");
@@ -2522,7 +2915,7 @@ document.querySelectorAll('.tab-button').forEach(function(btn) {
             }
             document.getElementById('update-text').onclick = function () {
                 if (!editor.value.length) {
-                    alert('Please enter text first');
+                    alert('Vui lòng nhập văn bản trước');
                     return;
                 }
                 editor.style.display = 'none';
@@ -2700,12 +3093,12 @@ document.querySelectorAll('.tab-button').forEach(function(btn) {
             function syncModeUi() {
                 const maxLen = getMaxLabelLength();
                 gridSizeSelect.value = '16';
-                if (textInput.value === 'Days until' || textInput.value === 'DATE') {
+                if (textInput.value === 'Con lai' || textInput.value === 'Days until' || textInput.value === 'DATE') {
                     textInput.value = getFallbackLabel();
                 }
                 textInput.maxLength = maxLen;
                 sanitizeInputValue();
-                textInput.placeholder = 'Enter 1-8 characters';
+                textInput.placeholder = 'Nhập 1-8 ký tự';
                 if (sizeHint) {
                     sizeHint.textContent = 'Clock countdown supports up to 8 ASCII characters.';
                 }
@@ -2790,19 +3183,19 @@ document.querySelectorAll('.tab-button').forEach(function(btn) {
 
             function generateCode() {
                 if (!datePicker.value) {
-                    addLog('Please select a countdown date');
+                    addLog('Vui lòng chọn ngày đếm ngược');
                     return;
                 }
 
                 const selectedDate = new Date(`${datePicker.value}T00:00:00`);
                 if (Number.isNaN(selectedDate.getTime())) {
-                    addLog('Invalid countdown date');
+                    addLog('Ngày đếm ngược không hợp lệ');
                     return;
                 }
 
                 const year = selectedDate.getFullYear();
                 if (year < 2000 || year > 2099) {
-                    addLog('Countdown date must be between 2000 and 2099');
+                    addLog('Ngày đếm ngược phải từ 2000 đến 2099');
                     return;
                 }
 
@@ -2980,7 +3373,7 @@ function initCanvas() {
                 ctx.fillStyle = '#666';
                 ctx.font = '14px Arial';
                 ctx.textAlign = 'center';
-                ctx.fillText('Loading background image...', canvas.width/2, canvas.height/2);
+                ctx.fillText('Đang tải ảnh nền...', canvas.width/2, canvas.height/2);
                 loadBuiltInBackground(state.selectedBgTemplate, bgDef.url);
             }
         }
@@ -3361,7 +3754,7 @@ function loadBuiltInBackground(templateId, url) {
                 case 'image':
                     const selectedItem = imageTemplates.querySelector('.template-item.selected');
                     if (!selectedItem) {
-                        alert('Please select an icon or generate QR code first!');
+                        alert('Vui lòng chọn icon hoặc tạo mã QR trước!');
                         return;
                     }
                     const iconId = selectedItem.dataset.type;
@@ -3447,11 +3840,11 @@ function loadBuiltInBackground(templateId, url) {
         function updateRotationInputsForElement(element) {
             if (!element) return;
             rotationInput.value = element.rotation || 0;
-            rotationValue.textContent = `${element.rotation || 0} deg`;
+            rotationValue.textContent = `${element.rotation || 0}°`;
         }
         function moveElement(dx, dy) {
             if (state.selectedElementIndex === -1 || state.elements.length === 0) {
-                alert('Please add and select an element first!');
+                alert('Vui lòng thêm và chọn một phần tử trước!');
                 return;
             }
             const element = state.elements[state.selectedElementIndex];
@@ -3494,12 +3887,12 @@ function loadBuiltInBackground(templateId, url) {
         }
         function updateSelectedText() {
             if (state.selectedElementIndex === -1 || state.elements.length === 0) {
-                alert('Please select a text element first!');
+                alert('Vui lòng chọn phần tử văn bản trước!');
                 return;
             }
             const element = state.elements[state.selectedElementIndex];
             if (element.type !== 'text') {
-                alert('Please select a text element to edit!');
+                alert('Vui lòng chọn phần tử văn bản để chỉnh sửa!');
                 return;
             }
             element.content = textContent.value;
@@ -3513,7 +3906,7 @@ function loadBuiltInBackground(templateId, url) {
         }
         function applyRotation() {
             if (state.selectedElementIndex === -1 || state.elements.length === 0) {
-                alert('Please add and select an element first!');
+                alert('Vui lòng thêm và chọn một phần tử trước!');
                 return;
             }
             const element = state.elements[state.selectedElementIndex];
@@ -3522,7 +3915,7 @@ function loadBuiltInBackground(templateId, url) {
         }
         function applySize() {
             if (state.selectedElementIndex === -1 || state.elements.length === 0) {
-                alert('Please add and select an element first!');
+                alert('Vui lòng thêm và chọn một phần tử trước!');
                 return;
             }
             const element = state.elements[state.selectedElementIndex];
@@ -3575,10 +3968,10 @@ function loadBuiltInBackground(templateId, url) {
         }
         function deleteSelectedElement() {
             if (state.selectedElementIndex === -1 || state.elements.length === 0) {
-                alert('Please select an element first!');
+                alert('Vui lòng chọn một phần tử trước!');
                 return;
             }
-            if (confirm('Delete the selected element?')) {
+            if (confirm('Xóa phần tử đã chọn?')) {
                 state.elements.splice(state.selectedElementIndex, 1);
                 state.selectedElementIndex = -1;
                 sizeControls.classList.remove('show');
@@ -3588,7 +3981,7 @@ function loadBuiltInBackground(templateId, url) {
         }
         function duplicateSelectedElement() {
             if (state.selectedElementIndex === -1 || state.elements.length === 0) {
-                alert('Please select an element first!');
+                alert('Vui lòng chọn một phần tử trước!');
                 return;
             }
             const original = state.elements[state.selectedElementIndex];
@@ -3607,7 +4000,7 @@ function loadBuiltInBackground(templateId, url) {
         }
         function bringToFront() {
             if (state.selectedElementIndex === -1 || state.elements.length === 0) {
-                alert('Please select an element first!');
+                alert('Vui lòng chọn một phần tử trước!');
                 return;
             }
             const element = state.elements[state.selectedElementIndex];
@@ -3618,7 +4011,7 @@ function loadBuiltInBackground(templateId, url) {
         }
         function sendToBack() {
             if (state.selectedElementIndex === -1 || state.elements.length === 0) {
-                alert('Please select an element first!');
+                alert('Vui lòng chọn một phần tử trước!');
                 return;
             }
             const element = state.elements[state.selectedElementIndex];
@@ -3658,7 +4051,7 @@ function loadBuiltInBackground(templateId, url) {
                                     resolve(dataURL);
                                 } else {
                                     document.body.removeChild(qrDiv);
-                                    reject(new Error('Cannot generate QR code image'));
+                                    reject(new Error('Không thể tạo ảnh mã QR'));
                                 }
                             }
                         } catch (error) {
@@ -3674,7 +4067,7 @@ function loadBuiltInBackground(templateId, url) {
         async function generateQrcode() {
             const content = qrcodeContent.value.trim();
             if (!content) {
-                alert('Please enter text to generate QR code!');
+                alert('Vui lòng nhập nội dung để tạo mã QR!');
                 return;
             }
             try {
@@ -3705,12 +4098,12 @@ function loadBuiltInBackground(templateId, url) {
                     alert('QR code generated! Click "Add Element" to add it to canvas.');
                 };
                 qrImg.onerror = function() {
-                    alert('QR code image failed to load, please retry!');
+                    alert('Không tải được ảnh mã QR, vui lòng thử lại!');
                 };
                 qrImg.src = qrDataURL;
             } catch (error) {
                 console.error('QR code generation failed:', error);
-                alert('QR code generation failed! Error:' + error.message);
+                alert('Tạo mã QR thất bại! Lỗi:' + error.message);
             }
         }
         function addLocalImageIcon() {
@@ -3728,7 +4121,7 @@ function loadBuiltInBackground(templateId, url) {
                 previewItem.className = 'template-item';
                 previewItem.dataset.type = imageId;
                 previewItem.innerHTML = `
-                    <img src="${img.src}" alt="Local icon" style="object-fit: contain;">
+                    <img src="${img.src}" alt="Icon cục bộ" style="object-fit: contain;">
                     <div class="preview-remove" onclick="removeUploadedIcon('${imageId}', this)">x</div>
                 `;
                 imageTemplates.appendChild(previewItem);
@@ -3981,7 +4374,7 @@ function loadBuiltInBackground(templateId, url) {
                         previewItem.className = 'template-item';
                         previewItem.dataset.type = iconId;
                         previewItem.innerHTML = `
-                            <img src="${img.src}" alt="Custom icon">
+                            <img src="${img.src}" alt="Icon tùy chỉnh">
                             <div class="preview-remove" onclick="removeUploadedIcon('${iconId}', this)">x</div>
                         `;
                         imageTemplates.appendChild(previewItem);
@@ -4060,15 +4453,15 @@ function loadBuiltInBackground(templateId, url) {
                     rotateControls.style.display = 'block';
                     sizeControls.classList.add('show');
                     shapeParams.classList.add('show');
-                    param1Input.placeholder = 'Vertices (3-20)';
-                    param2Input.placeholder = 'Inner radius ratio (0.1-0.9)';
+                    param1Input.placeholder = 'Số đỉnh (3-20)';
+                    param2Input.placeholder = 'Tỷ lệ bán kính trong (0.1-0.9)';
                 } else if (type === 'triangle') {
                     textControls.style.display = 'none';
                     rotateControls.style.display = 'block';
                     sizeControls.classList.add('show');
                     shapeParams.classList.add('show');
-                    param1Input.placeholder = 'Sides (polygon)';
-                    param2Input.placeholder = 'Corner radius';
+                    param1Input.placeholder = 'Số cạnh (đa giác)';
+                    param2Input.placeholder = 'Bo góc';
                 } else {
                     textControls.style.display = 'none';
                     rotateControls.style.display = 'block';
@@ -4143,7 +4536,7 @@ function loadBuiltInBackground(templateId, url) {
             });
             saveCanvasBtn.addEventListener('click', saveCanvas);
             clearCanvasBtn.addEventListener('click', () => {
-                if (confirm('Clear all elements? All elements will be deleted!')) {
+                if (confirm('Xóa tất cả phần tử? Mọi phần tử sẽ bị xóa!')) {
                     state.elements = [];
                     state.selectedElementIndex = -1;
                     sizeControls.classList.remove('show');
@@ -4219,7 +4612,7 @@ function loadBuiltInBackground(templateId, url) {
             });
             updateTextBtn.addEventListener('click', updateSelectedText);
             rotationInput.addEventListener('input', () => {
-                rotationValue.textContent = `${rotationInput.value} deg`;
+                rotationValue.textContent = `${rotationInput.value}°`;
                 applyRotation();
             });
             deleteElementBtn.addEventListener('click', deleteSelectedElement);
@@ -4264,7 +4657,7 @@ function switchToTab(tabId) {
 function saveCanvasYSAndUpdateImage() {
         const canvasYS = document.getElementById('canvas_YS');
         if (!canvasYS) {
-            alert('Cannot find canvas_YS element!');
+            alert('Không tìm thấy phần tử canvas_YS!');
             return;
         }
         const ctxYS = canvasYS.getContext('2d');
@@ -4275,7 +4668,7 @@ function saveCanvasYSAndUpdateImage() {
         
         const img = new Image();
                 update_image(imageDataURL);
-                addLog(`Imported image from template!`);
+                addLog(`Đã nhập ảnh từ mẫu!`);
        const switched = switchToTab('tab-image');
        delay(100);
       // stretchToCanvas();
