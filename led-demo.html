@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#121110">
+    <title>DLG LED — Demo giao diện Bluetooth</title>
+    <script>
+        (function () {
+            try {
+                var t = localStorage.getItem('led-demo-theme');
+                if (t !== 'light' && t !== 'dark') t = 'dark';
+                document.documentElement.setAttribute('data-theme', t);
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
+    <style>
+        :root {
+            --bg: #f4f1ea;
+            --card: #fffdf8;
+            --surface-2: #efeae0;
+            --text: #191713;
+            --soft: #4d4840;
+            --muted: #8c857a;
+            --border: #e2dccf;
+            --accent: #f5471f;
+            --accent-hover: #d83a14;
+            --accent-dim: #fde9e2;
+            --teal: #0d7a6b;
+            --teal-dim: #dbefe9;
+            --success: #15803d;
+            --danger: #dc2626;
+            --radius: 16px;
+            --radius-sm: 10px;
+            --shadow-md: 0 1px 2px rgba(25, 23, 19, 0.05), 0 8px 24px rgba(25, 23, 19, 0.06);
+            --topbar-bg: rgba(255, 253, 248, 0.96);
+            --font-body: "Be Vietnam Pro", system-ui, sans-serif;
+            --font-mono: "JetBrains Mono", ui-monospace, monospace;
+            --layout-max: 520px;
+            color-scheme: light;
+        }
+        :root[data-theme="dark"] {
+            --bg: #121110;
+            --card: #1c1a17;
+            --surface-2: #24211c;
+            --text: #f5f1e8;
+            --soft: #cbc4b6;
+            --muted: #8f897c;
+            --border: rgba(255, 255, 255, 0.09);
+            --accent: #ff6a45;
+            --accent-hover: #ff8163;
+            --accent-dim: rgba(255, 106, 69, 0.16);
+            --teal: #33d6bf;
+            --teal-dim: rgba(51, 214, 191, 0.15);
+            --success: #34d399;
+            --danger: #f87171;
+            --shadow-md: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 30px rgba(0, 0, 0, 0.5);
+            --topbar-bg: rgba(28, 26, 23, 0.96);
+            color-scheme: dark;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: var(--font-body);
+            background: var(--bg);
+            background-image: radial-gradient(var(--border) 0.9px, transparent 0.9px);
+            background-size: 22px 22px;
+            color: var(--text);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+        .app-header {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: var(--topbar-bg);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+        }
+        .header-inner {
+            max-width: var(--layout-max);
+            margin: 0 auto;
+            padding: 12px 16px 10px;
+        }
+        .header-row1 {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .brand-mark {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-sm);
+            background: linear-gradient(135deg, var(--accent), #ff9a6a);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            font-weight: 800;
+            flex-shrink: 0;
+            box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 40%, transparent);
+        }
+        .brand-text h1 { font-size: 1rem; font-weight: 800; letter-spacing: -0.02em; }
+        .brand-text p { font-size: 0.65rem; font-weight: 600; color: var(--muted); margin-top: 1px; }
+        .header-row2 {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-top: 10px;
+            padding-bottom: 2px;
+        }
+        .ble-status {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 7px 12px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--soft);
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--muted);
+        }
+        .status-dot.demo-on,
+        .status-dot.connected {
+            background: var(--success);
+            box-shadow: 0 0 8px color-mix(in srgb, var(--success) 60%, transparent);
+        }
+        .status-dot.connecting {
+            background: var(--accent);
+            animation: ble-pulse 1s ease infinite;
+        }
+        @keyframes ble-pulse { 50% { opacity: 0.45; } }
+        button:disabled { opacity: 0.45; cursor: not-allowed; }
+        .icon-btn {
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--surface-2);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.05rem;
+            flex-shrink: 0;
+            transition: border-color 0.15s, background 0.15s;
+        }
+        .icon-btn:hover { border-color: var(--accent); background: var(--accent-dim); }
+        .theme-icon-sun { display: none; }
+        :root[data-theme="dark"] .theme-icon-moon { display: none; }
+        :root[data-theme="dark"] .theme-icon-sun { display: inline; }
+
+        main {
+            max-width: var(--layout-max);
+            margin: 0 auto;
+            padding: 16px 16px 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .demo-badge { display: none; }
+        .ble-unsupported {
+            font-size: 0.78rem;
+            font-weight: 500;
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            background: color-mix(in srgb, var(--danger) 12%, var(--card));
+            color: var(--danger);
+            border: 1px solid color-mix(in srgb, var(--danger) 25%, var(--border));
+        }
+        .update-banner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            font-size: 0.78rem;
+            font-weight: 600;
+            background: color-mix(in srgb, var(--teal) 14%, var(--card));
+            color: var(--teal);
+            border: 1px solid color-mix(in srgb, var(--teal) 35%, var(--border));
+        }
+        .update-banner[hidden] { display: none !important; }
+        .update-banner button {
+            flex-shrink: 0;
+            padding: 6px 12px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            border: none;
+            border-radius: 999px;
+            background: var(--teal);
+            color: #fff;
+            cursor: pointer;
+        }
+        .sync-meta .outdated { color: var(--accent); }
+        .panel {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+        }
+        .panel-head {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px 16px 0;
+        }
+        .panel-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-sm);
+            background: var(--surface-2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+        .panel-title { font-size: 0.92rem; font-weight: 800; }
+        .panel-sub { font-size: 0.75rem; color: var(--muted); font-weight: 500; margin-top: 2px; }
+        .panel-body { padding: 14px 16px 16px; }
+
+        .btn-row { display: flex; gap: 10px; }
+        button {
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 700;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            padding: 11px 16px;
+            transition: transform 0.1s, opacity 0.15s;
+        }
+        button:active { transform: scale(0.98); }
+        .btn-primary {
+            flex: 1;
+            background: var(--accent);
+            color: #fff;
+            box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 35%, transparent);
+        }
+        .btn-primary:hover { background: var(--accent-hover); }
+        .btn-secondary {
+            flex: 1;
+            background: transparent;
+            color: var(--teal);
+            border: 1.5px solid var(--teal);
+        }
+        .btn-secondary:hover { background: var(--teal-dim); }
+        .btn-ghost {
+            width: 100%;
+            margin-top: 10px;
+            background: var(--surface-2);
+            color: var(--soft);
+            border: 1px solid var(--border);
+        }
+
+        .device-chip {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            background: var(--surface-2);
+            border-radius: var(--radius-sm);
+            margin-top: 12px;
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+        }
+        .device-chip .name { color: var(--accent); font-weight: 600; flex: 1; }
+        .device-chip .rssi { color: var(--muted); }
+
+        .led-preview-wrap {
+            margin-top: 4px;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            border: 1px solid var(--border);
+            background: #0a0a0a;
+        }
+        .led-preview {
+            height: 56px;
+            display: flex;
+            align-items: stretch;
+            gap: 2px;
+            padding: 8px;
+        }
+        .led-seg {
+            flex: 1;
+            border-radius: 4px;
+            background: var(--preview-color, #f5471f);
+            opacity: calc(0.35 + var(--preview-bright, 0.8) * 0.65);
+            box-shadow: 0 0 12px color-mix(in srgb, var(--preview-color, #f5471f) 70%, transparent);
+            transition: background 0.2s, opacity 0.2s;
+        }
+        .led-preview-label {
+            padding: 8px 12px;
+            font-size: 0.72rem;
+            color: var(--muted);
+            background: var(--surface-2);
+            display: flex;
+            justify-content: space-between;
+            font-family: var(--font-mono);
+        }
+
+        .field { margin-bottom: 14px; }
+        .field:last-child { margin-bottom: 0; }
+        .field label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--soft);
+            margin-bottom: 8px;
+        }
+        .field label span.val {
+            font-family: var(--font-mono);
+            color: var(--accent);
+            font-weight: 500;
+        }
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--accent);
+            height: 6px;
+        }
+        input[type="color"] {
+            width: 100%;
+            height: 44px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--surface-2);
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .swatches {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
+            margin-top: 4px;
+        }
+        .swatch {
+            aspect-ratio: 1;
+            border-radius: 8px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: transform 0.12s, border-color 0.12s;
+        }
+        .swatch:hover { transform: scale(1.08); }
+        .swatch.selected { border-color: var(--text); box-shadow: 0 0 0 2px var(--card); }
+
+        .effect-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            max-height: 220px;
+            overflow-y: auto;
+            padding-right: 2px;
+        }
+        .effect-btn {
+            padding: 10px 6px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            background: var(--surface-2);
+            color: var(--soft);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+        }
+        .effect-btn.selected {
+            background: var(--accent-dim);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        .effect-btn.custom-fx {
+            border-style: dashed;
+        }
+
+        .sync-meta {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: 0.78rem;
+            color: var(--muted);
+        }
+        .sync-meta strong { color: var(--text); }
+        .sync-note {
+            margin-top: 10px;
+            font-size: 0.72rem;
+            line-height: 1.45;
+            color: var(--muted);
+        }
+        .sync-note code {
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+        }
+
+        .led-matrix-wrap {
+            margin-top: 4px;
+        }
+        .led-matrix {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 3px;
+            padding: 8px;
+            background: var(--surface-2);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+        }
+        .matrix-cell {
+            aspect-ratio: 1;
+            border-radius: 3px;
+            border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+            cursor: pointer;
+            min-width: 0;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .matrix-cell:hover:not(.inactive) { transform: scale(1.08); z-index: 1; }
+        .matrix-cell.inactive {
+            opacity: 0.22;
+            cursor: not-allowed;
+            background: var(--border) !important;
+        }
+        .matrix-cell.selected {
+            box-shadow: 0 0 0 2px var(--accent);
+            z-index: 2;
+        }
+        .matrix-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .matrix-toolbar button { flex: 1; min-width: 90px; }
+        .matrix-hint {
+            margin-top: 8px;
+            font-size: 0.72rem;
+            color: var(--muted);
+        }
+
+        .log-box {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            line-height: 1.55;
+            color: var(--teal);
+            background: #0a0a0a;
+            border-radius: var(--radius-sm);
+            padding: 10px 12px;
+            min-height: 72px;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+        :root[data-theme="light"] .log-box { background: #1a1814; }
+
+        @media (max-width: 360px) {
+            .swatches { grid-template-columns: repeat(4, 1fr); }
+            .effect-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <div class="header-inner">
+            <div class="header-row1">
+                <div class="brand-mark" aria-hidden="true">💡</div>
+                <div class="brand-text">
+                    <h1>DLG LED</h1>
+                    <p>Điều khiển Bluetooth · hoantien.dev</p>
+                </div>
+            </div>
+            <div class="header-row2">
+                <div class="ble-status" id="ble-status">
+                    <span class="status-dot" id="status-dot"></span>
+                    <span id="status-label">Chưa kết nối</span>
+                </div>
+                <button type="button" class="icon-btn" id="theme-btn" aria-label="Đổi giao diện">
+                    <span class="theme-icon-moon" aria-hidden="true">🌙</span>
+                    <span class="theme-icon-sun" aria-hidden="true">☀️</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <p class="demo-badge">Demo giao diện</p>
+        <p class="ble-unsupported" id="ble-unsupported" hidden>
+            Trình duyệt không hỗ trợ Web Bluetooth. Mở trang bằng Google Chrome trên máy tính hoặc Android.
+        </p>
+        <div class="update-banner" id="update-banner" hidden>
+            <span>Có bản cập nhật <strong id="banner-ver">v?</strong></span>
+            <button type="button" id="banner-fetch">Tải ngay</button>
+        </div>
+
+        <section class="panel">
+            <div class="panel-head">
+                <div class="panel-icon" aria-hidden="true">📶</div>
+                <div>
+                    <div class="panel-title">Kết nối thiết bị</div>
+                    <div class="panel-sub">Quét và chọn đèn LED qua Bluetooth</div>
+                </div>
+            </div>
+            <div class="panel-body">
+                <div class="btn-row">
+                    <button type="button" class="btn-secondary" id="btn-scan">Quét BLE</button>
+                    <button type="button" class="btn-primary" id="btn-connect" disabled>Kết nối</button>
+                </div>
+                <div class="device-chip" id="device-chip" hidden>
+                    <span>📡</span>
+                    <span class="name" id="device-name">—</span>
+                </div>
+                <button type="button" class="btn-ghost" id="btn-disconnect" disabled>Ngắt kết nối</button>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="panel-head">
+                <div class="panel-icon" aria-hidden="true">🎨</div>
+                <div>
+                    <div class="panel-title">Màu đèn</div>
+                    <div class="panel-sub">64 LED · ma trận 8×8</div>
+                </div>
+            </div>
+            <div class="panel-body">
+                <div class="led-preview-wrap">
+                    <div class="led-preview" id="led-preview" aria-hidden="true"></div>
+                    <div class="led-preview-label">
+                        <span id="matrix-label">64 LED · GPIO 48</span>
+                        <span id="hex-label">#F5471F</span>
+                    </div>
+                </div>
+
+                <div class="field" style="margin-top:14px">
+                    <label for="color-picker">Chọn màu</label>
+                    <input type="color" id="color-picker" value="#f5471f">
+                </div>
+
+                <div class="field">
+                    <label>Độ sáng <span class="val" id="bright-val">80%</span></label>
+                    <input type="range" id="brightness" min="0" max="100" value="80">
+                </div>
+
+                <div class="field">
+                    <label>Màu nhanh</label>
+                    <div class="swatches" id="swatches"></div>
+                </div>
+
+                <button type="button" class="btn-primary" id="btn-apply-color" style="width:100%;margin-top:4px" disabled>
+                    Tô toàn bộ 64 LED
+                </button>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="panel-head">
+                <div class="panel-icon" aria-hidden="true">🧩</div>
+                <div>
+                    <div class="panel-title">Ma trận LED</div>
+                    <div class="panel-sub">Chọn màu bên trên, bấm từng ô</div>
+                </div>
+            </div>
+            <div class="panel-body">
+                <div class="led-matrix-wrap">
+                    <div class="led-matrix" id="led-matrix" role="grid" aria-label="Ma trận 8×8 LED"></div>
+                </div>
+                <p class="matrix-hint" id="matrix-hint">Ô đang chọn: — · Bấm giữ và kéo để tô nhanh</p>
+                <div class="matrix-toolbar">
+                    <button type="button" class="btn-secondary" id="btn-matrix-fill">Tô tất cả</button>
+                    <button type="button" class="btn-secondary" id="btn-matrix-clear">Xóa ma trận</button>
+                    <button type="button" class="btn-primary" id="btn-matrix-send" disabled>Gửi ma trận</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="panel-head">
+                <div class="panel-icon" aria-hidden="true">✨</div>
+                <div>
+                    <div class="panel-title">Hiệu ứng</div>
+                    <div class="panel-sub">Chế độ chuyển động ma trận LED</div>
+                </div>
+            </div>
+            <div class="panel-body">
+                <div class="effect-grid" id="effect-grid"></div>
+                <button type="button" class="btn-ghost" id="btn-apply-effect" disabled style="margin-top:12px">Gửi hiệu ứng</button>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="panel-head">
+                <div class="panel-icon" aria-hidden="true">☁️</div>
+                <div>
+                    <div class="panel-title">Cập nhật từ xa</div>
+                    <div class="panel-sub">Tải gói hiệu ứng mới và đồng bộ lên ESP</div>
+                </div>
+            </div>
+            <div class="panel-body">
+                <div class="sync-meta">
+                    <span>Gói web: <strong id="web-pack-ver">—</strong></span>
+                    <span>ESP: <strong id="esp-pack-ver">—</strong></span>
+                </div>
+                <div class="btn-row" style="margin-top:10px">
+                    <button type="button" class="btn-secondary" id="btn-fetch-pack">Tải gói mới</button>
+                    <button type="button" class="btn-primary" id="btn-sync-pack" disabled>Đồng bộ lên ESP</button>
+                </div>
+                <p class="sync-note" id="sync-note">Host file <code>effects-pack.json</code> trên server — khách mở web sẽ nhận hiệu ứng mới, rồi đồng bộ qua BLE.</p>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="panel-head">
+                <div class="panel-icon" aria-hidden="true">📋</div>
+                <div>
+                    <div class="panel-title">Nhật ký</div>
+                    <div class="panel-sub">Hoạt động Bluetooth</div>
+                </div>
+            </div>
+            <div class="panel-body">
+                <div class="log-box" id="log-box"></div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        (function () {
+            var BLE_SERVICE = '00001f10-0000-1000-8000-00805f9b34fb';
+            var BLE_CHAR = '00001f1f-0000-1000-8000-00805f9b34fb';
+            var CMD_SET_COLOR = 0xA1;
+            var CMD_SET_EFFECT = 0xA2;
+            var CMD_PIXEL_CHUNK = 0xA4;
+            var CMD_PIXEL_SHOW = 0xA5;
+            var CMD_PACK_QUERY = 0xB0;
+            var CMD_PACK_CHUNK = 0xB1;
+            var CMD_PACK_COMMIT = 0xB2;
+            var RSP_PACK_OK = 0xC0;
+            var RSP_PACK_INFO = 0xC1;
+            var PACK_CHUNK_DATA = 17;
+            var LS_PACK_KEY = 'dlg-led-pack-version';
+
+            var LOCAL_MANIFEST = 'effects-pack.json';
+            var REMOTE_MANIFEST = 'https://hoantien.dev/dlg-led/effects-pack.json';
+
+            var GRID_COLS = 8;
+            var GRID_ROWS = 8;
+            var GRID_CELLS = 64;
+            var LED_COUNT = 64;
+
+            var PRESETS = [
+                '#f5471f', '#ff6a45', '#33d6bf', '#667eea', '#f093fb',
+                '#fee440', '#ffffff', '#ff0000', '#00ff88', '#0088ff',
+                '#ff00ff', '#ffd700'
+            ];
+
+            var FALLBACK_MANIFEST = {
+                version: 3,
+                hardware: { led_count: 64, grid_cols: 8, grid_rows: 8, grid_cells: 64, gpio: 48 },
+                effects: [
+                    { id: 0, name: 'Cố định', engine: 'solid' },
+                    { id: 1, name: 'Nhấp nháy', engine: 'blink' },
+                    { id: 2, name: 'Nhấp nhanh', engine: 'blink' },
+                    { id: 3, name: 'Đập tim', engine: 'heartbeat' },
+                    { id: 4, name: 'Hơi thở', engine: 'breathe' },
+                    { id: 5, name: 'Sóng sáng', engine: 'wave' },
+                    { id: 6, name: 'Rainbow', engine: 'rainbow' },
+                    { id: 7, name: 'Cực quang', engine: 'aurora' },
+                    { id: 8, name: 'Disco', engine: 'disco' },
+                    { id: 9, name: 'Cảnh sát', engine: 'police' },
+                    { id: 10, name: 'Nến', engine: 'candle' },
+                    { id: 11, name: 'Sét', engine: 'lightning' },
+                    { id: 12, name: 'SOS', engine: 'sos' },
+                    { id: 13, name: 'Chạy', engine: 'chase' },
+                    { id: 14, name: 'Tắt đèn', engine: 'off' }
+                ]
+            };
+
+            var manifest = null;
+            var effectList = [];
+            var matrixColors = [];
+            var selectedCell = -1;
+            var isPainting = false;
+            var bleSupported = !!(navigator.bluetooth && navigator.bluetooth.requestDevice);
+            var bleDevice = null;
+            var gattServer = null;
+            var rxtxChar = null;
+            var pendingDevice = null;
+            var selectedEffect = 0;
+            var espPackVersion = null;
+            var packNotifyResolver = null;
+
+            var picker = document.getElementById('color-picker');
+            var bright = document.getElementById('brightness');
+            var brightVal = document.getElementById('bright-val');
+            var hexLabel = document.getElementById('hex-label');
+            var preview = document.getElementById('led-preview');
+            var swatchesEl = document.getElementById('swatches');
+            var effectGrid = document.getElementById('effect-grid');
+            var logBox = document.getElementById('log-box');
+            var statusDot = document.getElementById('status-dot');
+            var statusLabel = document.getElementById('status-label');
+            var deviceChip = document.getElementById('device-chip');
+            var deviceNameEl = document.getElementById('device-name');
+            var btnScan = document.getElementById('btn-scan');
+            var btnConnect = document.getElementById('btn-connect');
+            var btnDisconnect = document.getElementById('btn-disconnect');
+            var btnApplyColor = document.getElementById('btn-apply-color');
+            var btnApplyEffect = document.getElementById('btn-apply-effect');
+            var btnFetchPack = document.getElementById('btn-fetch-pack');
+            var btnSyncPack = document.getElementById('btn-sync-pack');
+            var webPackVerEl = document.getElementById('web-pack-ver');
+            var espPackVerEl = document.getElementById('esp-pack-ver');
+            var bleUnsupportedEl = document.getElementById('ble-unsupported');
+            var updateBanner = document.getElementById('update-banner');
+            var bannerVerEl = document.getElementById('banner-ver');
+            var bannerFetchBtn = document.getElementById('banner-fetch');
+            var ledMatrixEl = document.getElementById('led-matrix');
+            var matrixHintEl = document.getElementById('matrix-hint');
+            var matrixLabelEl = document.getElementById('matrix-label');
+            var btnMatrixFill = document.getElementById('btn-matrix-fill');
+            var btnMatrixClear = document.getElementById('btn-matrix-clear');
+            var btnMatrixSend = document.getElementById('btn-matrix-send');
+            var syncNoteEl = document.getElementById('sync-note');
+
+            function addLog(msg) {
+                var now = new Date();
+                var t = ('0' + now.getHours()).slice(-2) + ':' +
+                    ('0' + now.getMinutes()).slice(-2) + ':' +
+                    ('0' + now.getSeconds()).slice(-2);
+                logBox.innerHTML += t + ' — ' + msg + '<br>';
+                logBox.scrollTop = logBox.scrollHeight;
+            }
+
+            function effectNameById(id) {
+                for (var i = 0; i < effectList.length; i++) {
+                    if (effectList[i].id === id) return effectList[i].name;
+                }
+                return 'ID ' + id;
+            }
+
+            function getStoredPackVersion() {
+                try { return parseInt(localStorage.getItem(LS_PACK_KEY), 10) || 0; } catch (e) { return 0; }
+            }
+
+            function setStoredPackVersion(v) {
+                try { localStorage.setItem(LS_PACK_KEY, String(v)); } catch (e) {}
+            }
+
+            function showUpdateBanner(ver) {
+                bannerVerEl.textContent = 'v' + ver;
+                updateBanner.hidden = false;
+            }
+
+            function hideUpdateBanner() {
+                updateBanner.hidden = true;
+            }
+
+            function checkVersionNotice() {
+                if (!manifest) return;
+                var stored = getStoredPackVersion();
+                if (manifest.version > stored) showUpdateBanner(manifest.version);
+                else hideUpdateBanner();
+                updateSyncHint();
+            }
+
+            function updateSyncHint() {
+                if (!manifest || !syncNoteEl) return;
+                var stored = getStoredPackVersion();
+                if (espPackVersion !== null && manifest.version > espPackVersion) {
+                    syncNoteEl.innerHTML = 'ESP cần đồng bộ — web <strong>v' + manifest.version +
+                        '</strong>, ESP <strong class="outdated">v' + espPackVersion + '</strong>';
+                } else if (manifest.version > stored) {
+                    syncNoteEl.textContent = 'Đã có gói v' + manifest.version + ' — bấm Tải gói mới hoặc Đồng bộ lên ESP.';
+                } else {
+                    syncNoteEl.textContent = 'Gói hiệu ứng đã cập nhật.';
+                }
+            }
+
+            function applyHardware(hw) {
+                if (!hw) return;
+                if (hw.led_count) LED_COUNT = hw.led_count;
+                if (hw.grid_cols) GRID_COLS = hw.grid_cols;
+                if (hw.grid_rows) GRID_ROWS = hw.grid_rows;
+                if (hw.grid_cells) GRID_CELLS = hw.grid_cells;
+                if (matrixLabelEl) {
+                    matrixLabelEl.textContent = LED_COUNT + ' LED · GPIO ' + (hw.gpio || 48);
+                }
+                initMatrix();
+            }
+
+            function cellToLedIndex(cell) {
+                return cell < LED_COUNT ? cell : -1;
+            }
+
+            function getBrushRgb() {
+                return hexToScaledRgb(picker.value, bright.value);
+            }
+
+            function paintCell(cell, rgb) {
+                if (cellToLedIndex(cell) < 0) return;
+                matrixColors[cell] = { r: rgb.r, g: rgb.g, b: rgb.b };
+                var el = ledMatrixEl.querySelector('[data-cell="' + cell + '"]');
+                if (el) el.style.background = 'rgb(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ')';
+            }
+
+            function selectCell(cell) {
+                selectedCell = cell;
+                ledMatrixEl.querySelectorAll('.matrix-cell').forEach(function (el) {
+                    el.classList.toggle('selected', Number(el.dataset.cell) === cell);
+                });
+                if (cellToLedIndex(cell) >= 0) {
+                    matrixHintEl.textContent = 'Ô ' + cell + ' → LED #' + cell + ' · Bấm giữ và kéo để tô nhanh';
+                } else {
+                    matrixHintEl.textContent = 'Ô ' + cell + ' không có LED (chỉ ' + LED_COUNT + ' LED)';
+                }
+            }
+
+            function initMatrix() {
+                matrixColors = [];
+                ledMatrixEl.innerHTML = '';
+                ledMatrixEl.style.gridTemplateColumns = 'repeat(' + GRID_COLS + ', 1fr)';
+                for (var c = 0; c < GRID_CELLS; c++) {
+                    matrixColors[c] = { r: 0, g: 0, b: 0 };
+                    var cell = document.createElement('button');
+                    cell.type = 'button';
+                    cell.className = 'matrix-cell' + (cellToLedIndex(c) < 0 ? ' inactive' : '');
+                    cell.dataset.cell = String(c);
+                    cell.title = cellToLedIndex(c) < 0 ? 'Không dùng' : ('LED ' + c);
+                    cell.style.background = '#000';
+                    cell.addEventListener('pointerdown', function (e) {
+                        var idx = Number(e.currentTarget.dataset.cell);
+                        if (cellToLedIndex(idx) < 0) return;
+                        isPainting = true;
+                        selectCell(idx);
+                        paintCell(idx, getBrushRgb());
+                        e.currentTarget.setPointerCapture(e.pointerId);
+                    });
+                    cell.addEventListener('pointerenter', function (e) {
+                        if (!isPainting) return;
+                        var idx = Number(e.currentTarget.dataset.cell);
+                        paintCell(idx, getBrushRgb());
+                    });
+                    cell.addEventListener('pointerup', function () { isPainting = false; });
+                    cell.addEventListener('click', function (e) {
+                        selectCell(Number(e.currentTarget.dataset.cell));
+                    });
+                    ledMatrixEl.appendChild(cell);
+                }
+                selectCell(0);
+            }
+
+            function fillMatrix(rgb) {
+                for (var c = 0; c < GRID_CELLS; c++) paintCell(c, rgb);
+            }
+
+            function clearMatrix() {
+                fillMatrix({ r: 0, g: 0, b: 0 });
+            }
+
+            function buildPixelBuffer() {
+                var buf = new Uint8Array(LED_COUNT * 3);
+                for (var i = 0; i < LED_COUNT; i++) {
+                    var col = matrixColors[i] || { r: 0, g: 0, b: 0 };
+                    buf[i * 3] = col.r;
+                    buf[i * 3 + 1] = col.g;
+                    buf[i * 3 + 2] = col.b;
+                }
+                return buf;
+            }
+
+            async function sendChunked(cmd, bin) {
+                var total = Math.ceil(bin.length / PACK_CHUNK_DATA) || 1;
+                for (var i = 0; i < total; i++) {
+                    var slice = bin.slice(i * PACK_CHUNK_DATA, (i + 1) * PACK_CHUNK_DATA);
+                    var pkt = new Uint8Array(3 + slice.length);
+                    pkt[0] = cmd;
+                    pkt[1] = i;
+                    pkt[2] = total;
+                    pkt.set(slice, 3);
+                    await sendBytes(pkt);
+                }
+            }
+
+            async function sendPixelMap() {
+                var bin = buildPixelBuffer();
+                await sendChunked(CMD_PIXEL_CHUNK, bin);
+                await sendBytes(new Uint8Array([CMD_PIXEL_SHOW]));
+                addLog('Đã gửi ma trận ' + LED_COUNT + ' LED');
+            }
+
+            function updatePackLabels() {
+                webPackVerEl.textContent = manifest ? ('v' + manifest.version) : '—';
+                espPackVerEl.textContent = espPackVersion === null ? '—' : ('v' + espPackVersion);
+            }
+
+            function setConnectionUI(state, label) {
+                statusDot.classList.remove('demo-on', 'connected', 'connecting');
+                if (state === 'connected') statusDot.classList.add('connected');
+                else if (state === 'connecting') statusDot.classList.add('connecting');
+                statusLabel.textContent = label || 'Chưa kết nối';
+
+                var connected = state === 'connected';
+                btnScan.disabled = !bleSupported || connected;
+                btnConnect.disabled = !bleSupported || connected || !pendingDevice;
+                btnDisconnect.disabled = !connected;
+                btnApplyColor.disabled = !connected;
+                btnApplyEffect.disabled = !connected;
+                btnSyncPack.disabled = !connected || !manifest;
+                btnMatrixSend.disabled = !connected;
+            }
+
+            function renderEffectGrid() {
+                effectGrid.innerHTML = '';
+                effectList.forEach(function (fx) {
+                    var btn = document.createElement('button');
+                    var isCustom = fx.frames && fx.frames.length > 0;
+                    btn.type = 'button';
+                    btn.className = 'effect-btn' +
+                        (fx.id === selectedEffect ? ' selected' : '') +
+                        (isCustom ? ' custom-fx' : '');
+                    btn.textContent = fx.name;
+                    btn.title = isCustom ? 'Hiệu ứng tùy chỉnh (cần đồng bộ ESP)' : ('Engine: ' + (fx.engine || 'builtin'));
+                    btn.dataset.effect = String(fx.id);
+                    btn.addEventListener('click', function () {
+                        selectedEffect = fx.id;
+                        effectGrid.querySelectorAll('.effect-btn').forEach(function (b) {
+                            b.classList.remove('selected');
+                        });
+                        btn.classList.add('selected');
+                    });
+                    effectGrid.appendChild(btn);
+                });
+            }
+
+            function applyManifest(data, source) {
+                if (!data || !Array.isArray(data.effects)) throw new Error('Manifest không hợp lệ');
+                manifest = data;
+                applyHardware(data.hardware);
+                effectList = data.effects.slice().sort(function (a, b) { return a.id - b.id; });
+                if (effectList.length === 0) throw new Error('Manifest rỗng');
+                if (!effectList.some(function (e) { return e.id === selectedEffect; })) {
+                    selectedEffect = effectList[0].id;
+                }
+                renderEffectGrid();
+                updatePackLabels();
+                checkVersionNotice();
+                addLog('Đã tải gói hiệu ứng ' + source + ' (v' + manifest.version + ', ' + effectList.length + ' mục)');
+            }
+
+            async function fetchManifestFrom(url, source) {
+                var res = await fetch(url, { cache: 'no-store' });
+                if (!res.ok) throw new Error(source + ' HTTP ' + res.status);
+                var data = await res.json();
+                applyManifest(data, source);
+                return data;
+            }
+
+            async function loadManifest(markFetched) {
+                try {
+                    await fetchManifestFrom(REMOTE_MANIFEST, 'từ xa');
+                } catch (e1) {
+                    addLog('Gói từ xa: ' + e1.message);
+                    try {
+                        await fetchManifestFrom(LOCAL_MANIFEST, 'cục bộ');
+                    } catch (e2) {
+                        addLog('Gói cục bộ: ' + e2.message);
+                        applyManifest(FALLBACK_MANIFEST, 'mặc định');
+                    }
+                }
+                if (markFetched && manifest) {
+                    setStoredPackVersion(manifest.version);
+                    hideUpdateBanner();
+                    updateSyncHint();
+                }
+            }
+
+            function buildBinaryPack(data) {
+                var customs = data.effects.filter(function (e) {
+                    return e.frames && e.frames.length > 0 && e.id >= 128;
+                });
+                var parts = [0x44, 0x4c, 0x46, 0x58];
+                parts.push(data.version & 0xff, (data.version >> 8) & 0xff);
+                parts.push(customs.length, 0);
+                customs.forEach(function (fx) {
+                    parts.push(fx.id, fx.frames.length);
+                    fx.frames.forEach(function (fr) {
+                        var ms = Math.max(10, Math.min(65535, Number(fr.ms) || 100));
+                        parts.push(
+                            Math.min(255, Number(fr.r) || 0),
+                            Math.min(255, Number(fr.g) || 0),
+                            Math.min(255, Number(fr.b) || 0),
+                            ms & 0xff,
+                            (ms >> 8) & 0xff
+                        );
+                    });
+                });
+                return new Uint8Array(parts);
+            }
+
+            function waitPackNotify(expectedCode, timeoutMs) {
+                return new Promise(function (resolve, reject) {
+                    var timer = setTimeout(function () {
+                        packNotifyResolver = null;
+                        reject(new Error('Hết thời gian chờ ESP'));
+                    }, timeoutMs || 8000);
+                    packNotifyResolver = function (data) {
+                        if (data[0] !== expectedCode) return;
+                        clearTimeout(timer);
+                        packNotifyResolver = null;
+                        resolve(data);
+                    };
+                });
+            }
+
+            function onPackNotify(event) {
+                var data = new Uint8Array(event.target.value.buffer);
+                if (packNotifyResolver) packNotifyResolver(data);
+                if (data[0] === RSP_PACK_INFO || data[0] === RSP_PACK_OK) {
+                    espPackVersion = (data[1] << 8) | data[2];
+                    updatePackLabels();
+                }
+                if (data[0] === RSP_PACK_OK) {
+                    addLog('ESP lưu gói v' + espPackVersion + ' (' + data[3] + ' hiệu ứng tùy chỉnh)');
+                    if (manifest) {
+                        setStoredPackVersion(manifest.version);
+                        hideUpdateBanner();
+                        updateSyncHint();
+                    }
+                }
+            }
+
+            async function queryEspPack() {
+                var wait = waitPackNotify(RSP_PACK_INFO);
+                await sendBytes(new Uint8Array([CMD_PACK_QUERY]));
+                var rsp = await wait;
+                espPackVersion = (rsp[1] << 8) | rsp[2];
+                updatePackLabels();
+                updateSyncHint();
+                addLog('ESP đang có gói v' + espPackVersion + ' (' + rsp[3] + ' custom)');
+            }
+
+            async function syncPackToDevice() {
+                if (!manifest) throw new Error('Chưa có manifest');
+                var bin = buildBinaryPack(manifest);
+                addLog('Đồng bộ gói v' + manifest.version + ' (' + bin.length + ' byte)...');
+                await sendChunked(CMD_PACK_CHUNK, bin);
+                var wait = waitPackNotify(RSP_PACK_OK);
+                await sendBytes(new Uint8Array([CMD_PACK_COMMIT]));
+                await wait;
+            }
+
+            function hexToScaledRgb(hex, brightnessPercent) {
+                var h = hex.replace('#', '');
+                var scale = Number(brightnessPercent) / 100;
+                return {
+                    r: Math.round(parseInt(h.slice(0, 2), 16) * scale),
+                    g: Math.round(parseInt(h.slice(2, 4), 16) * scale),
+                    b: Math.round(parseInt(h.slice(4, 6), 16) * scale)
+                };
+            }
+
+            async function sendBytes(bytes) {
+                if (!rxtxChar) throw new Error('Chưa kết nối BLE');
+                await rxtxChar.writeValueWithResponse(bytes);
+            }
+
+            async function sendColor() {
+                var rgb = hexToScaledRgb(picker.value, bright.value);
+                await sendBytes(new Uint8Array([CMD_SET_COLOR, rgb.r, rgb.g, rgb.b]));
+                addLog('Màu RGB(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ')');
+            }
+
+            async function sendEffect() {
+                await sendBytes(new Uint8Array([CMD_SET_EFFECT, selectedEffect]));
+                addLog('Hiệu ứng: ' + effectNameById(selectedEffect));
+            }
+
+            function onDisconnected() {
+                bleDevice = null;
+                gattServer = null;
+                rxtxChar = null;
+                espPackVersion = null;
+                updatePackLabels();
+                setConnectionUI('idle', 'Chưa kết nối');
+                addLog('Đã ngắt kết nối');
+            }
+
+            async function connectBle() {
+                if (!pendingDevice) return;
+                setConnectionUI('connecting', 'Đang kết nối...');
+                addLog('Kết nối: ' + (pendingDevice.name || 'Thiết bị BLE'));
+                bleDevice = pendingDevice;
+                bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
+                gattServer = await bleDevice.gatt.connect();
+                var service = await gattServer.getPrimaryService(BLE_SERVICE);
+                rxtxChar = await service.getCharacteristic(BLE_CHAR);
+                await rxtxChar.startNotifications();
+                rxtxChar.addEventListener('characteristicvaluechanged', onPackNotify);
+                deviceNameEl.textContent = bleDevice.name || 'DLG-LED';
+                deviceChip.hidden = false;
+                setConnectionUI('connected', 'Đã kết nối: ' + (bleDevice.name || 'DLG-LED'));
+                addLog('Kết nối thành công');
+                try { await queryEspPack(); } catch (e) { addLog('Không đọc được gói ESP: ' + e.message); }
+            }
+
+            async function scanBle() {
+                try {
+                    setConnectionUI('connecting', 'Đang quét...');
+                    var device = await navigator.bluetooth.requestDevice({
+                        filters: [{ namePrefix: 'DLG-LED' }],
+                        optionalServices: [BLE_SERVICE]
+                    });
+                    pendingDevice = device;
+                    deviceNameEl.textContent = device.name || 'DLG-LED';
+                    deviceChip.hidden = false;
+                    addLog('Tìm thấy: ' + (device.name || 'DLG-LED'));
+                    setConnectionUI('idle', 'Sẵn sàng kết nối');
+                    btnConnect.disabled = false;
+                } catch (e) {
+                    pendingDevice = null;
+                    setConnectionUI('idle', 'Chưa kết nối');
+                    if (e.name !== 'NotFoundError') addLog('Quét thất bại: ' + e.message);
+                }
+            }
+
+            function disconnectBle() {
+                if (bleDevice && bleDevice.gatt.connected) bleDevice.gatt.disconnect();
+                else onDisconnected();
+            }
+
+            for (var i = 0; i < 12; i++) {
+                var seg = document.createElement('div');
+                seg.className = 'led-seg';
+                preview.appendChild(seg);
+            }
+
+            PRESETS.forEach(function (hex, idx) {
+                var el = document.createElement('button');
+                el.type = 'button';
+                el.className = 'swatch' + (idx === 0 ? ' selected' : '');
+                el.style.background = hex;
+                el.title = hex;
+                el.addEventListener('click', function () {
+                    picker.value = hex;
+                    updatePreview();
+                    swatchesEl.querySelectorAll('.swatch').forEach(function (s) {
+                        s.classList.remove('selected');
+                    });
+                    el.classList.add('selected');
+                });
+                swatchesEl.appendChild(el);
+            });
+
+            function updatePreview() {
+                var hex = picker.value;
+                var b = Number(bright.value) / 100;
+                document.documentElement.style.setProperty('--preview-color', hex);
+                document.documentElement.style.setProperty('--preview-bright', String(b));
+                hexLabel.textContent = hex.toUpperCase();
+                brightVal.textContent = bright.value + '%';
+            }
+
+            picker.addEventListener('input', function () {
+                updatePreview();
+                swatchesEl.querySelectorAll('.swatch').forEach(function (s) {
+                    s.classList.toggle('selected', s.title.toLowerCase() === picker.value.toLowerCase());
+                });
+            });
+            bright.addEventListener('input', updatePreview);
+            updatePreview();
+
+            document.getElementById('theme-btn').addEventListener('click', function () {
+                var root = document.documentElement;
+                var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+                root.setAttribute('data-theme', next);
+                try { localStorage.setItem('led-demo-theme', next); } catch (e) {}
+            });
+
+            btnScan.addEventListener('click', scanBle);
+            btnConnect.addEventListener('click', function () {
+                connectBle().catch(function (e) {
+                    addLog('Lỗi kết nối: ' + e.message);
+                    onDisconnected();
+                });
+            });
+            btnDisconnect.addEventListener('click', disconnectBle);
+            btnApplyColor.addEventListener('click', function () {
+                sendColor().catch(function (e) { addLog('Gửi màu lỗi: ' + e.message); });
+            });
+            btnApplyEffect.addEventListener('click', function () {
+                sendEffect().catch(function (e) { addLog('Gửi hiệu ứng lỗi: ' + e.message); });
+            });
+            btnMatrixFill.addEventListener('click', function () {
+                fillMatrix(getBrushRgb());
+            });
+            btnMatrixClear.addEventListener('click', clearMatrix);
+            btnMatrixSend.addEventListener('click', function () {
+                btnMatrixSend.disabled = true;
+                sendPixelMap().catch(function (e) {
+                    addLog('Gửi ma trận lỗi: ' + e.message);
+                }).finally(function () {
+                    setConnectionUI('connected', statusLabel.textContent);
+                });
+            });
+
+            document.addEventListener('pointerup', function () { isPainting = false; });
+            btnFetchPack.addEventListener('click', function () {
+                btnFetchPack.disabled = true;
+                loadManifest(true).catch(function (e) {
+                    addLog('Tải gói lỗi: ' + e.message);
+                }).finally(function () { btnFetchPack.disabled = false; });
+            });
+            bannerFetchBtn.addEventListener('click', function () {
+                btnFetchPack.disabled = true;
+                loadManifest(true).catch(function (e) {
+                    addLog('Tải gói lỗi: ' + e.message);
+                }).finally(function () { btnFetchPack.disabled = false; });
+            });
+            btnSyncPack.addEventListener('click', function () {
+                btnSyncPack.disabled = true;
+                syncPackToDevice().catch(function (e) {
+                    addLog('Đồng bộ lỗi: ' + e.message);
+                }).finally(function () {
+                    setConnectionUI('connected', statusLabel.textContent);
+                });
+            });
+
+            if (!bleSupported) {
+                bleUnsupportedEl.hidden = false;
+                btnScan.disabled = true;
+            }
+
+            initMatrix();
+            loadManifest(false).then(function () {
+                addLog('Đã lưu phiên bản local: v' + getStoredPackVersion() + ' · web v' + (manifest ? manifest.version : '?'));
+            }).catch(function () {
+                addLog('Sẵn sàng — dùng gói mặc định');
+            });
+            setConnectionUI('idle');
+        })();
+    </script>
+</body>
+</html>

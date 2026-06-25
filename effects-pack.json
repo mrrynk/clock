@@ -1,0 +1,61 @@
+{
+  "version": 3,
+  "manifest_url": "https://hoantien.dev/dlg-led/effects-pack.json",
+  "hardware": {
+    "led_count": 64,
+    "grid_cols": 8,
+    "grid_rows": 8,
+    "grid_cells": 64,
+    "gpio": 48,
+    "layout": "snake_rows"
+  },
+  "effects": [
+    { "id": 0, "name": "Cố định", "engine": "solid", "params": {} },
+    { "id": 1, "name": "Nhấp nháy", "engine": "blink", "params": { "period_ms": 500 } },
+    { "id": 2, "name": "Nhấp nhanh", "engine": "blink", "params": { "period_ms": 120 } },
+    { "id": 3, "name": "Đập tim", "engine": "heartbeat", "params": { "beat_ms": 90, "pause_ms": 650 } },
+    { "id": 4, "name": "Hơi thở", "engine": "breathe", "params": { "step_ms": 25, "min": 20, "max": 255 } },
+    { "id": 5, "name": "Sóng sáng", "engine": "wave", "params": { "step_ms": 20 } },
+    { "id": 6, "name": "Rainbow", "engine": "rainbow", "params": { "step_ms": 30, "spread": true } },
+    { "id": 7, "name": "Cực quang", "engine": "aurora", "params": { "step_ms": 35 } },
+    { "id": 8, "name": "Disco", "engine": "disco", "params": { "step_ms": 160 } },
+    { "id": 9, "name": "Cảnh sát", "engine": "police", "params": { "period_ms": 220 } },
+    { "id": 10, "name": "Nến", "engine": "candle", "params": { "min_flicker": 140 } },
+    { "id": 11, "name": "Sét", "engine": "lightning", "params": { "flash_chance": 14 } },
+    { "id": 12, "name": "SOS", "engine": "sos", "params": {} },
+    { "id": 13, "name": "Chạy", "engine": "chase", "params": { "step_ms": 80, "trail": 4 } },
+    { "id": 14, "name": "Tắt đèn", "engine": "off", "params": {} },
+    {
+      "id": 128,
+      "name": "Lửa trại",
+      "frames": [
+        { "r": 255, "g": 40, "b": 0, "ms": 60 },
+        { "r": 255, "g": 90, "b": 10, "ms": 50 },
+        { "r": 220, "g": 50, "b": 0, "ms": 70 },
+        { "r": 255, "g": 120, "b": 20, "ms": 40 },
+        { "r": 200, "g": 30, "b": 0, "ms": 80 },
+        { "r": 255, "g": 70, "b": 5, "ms": 55 }
+      ]
+    },
+    {
+      "id": 129,
+      "name": "Hoàng hôn",
+      "frames": [
+        { "r": 255, "g": 60, "b": 20, "ms": 400 },
+        { "r": 255, "g": 30, "b": 80, "ms": 400 },
+        { "r": 120, "g": 20, "b": 120, "ms": 400 },
+        { "r": 255, "g": 80, "b": 40, "ms": 400 }
+      ]
+    },
+    {
+      "id": 130,
+      "name": "Neon Club",
+      "frames": [
+        { "r": 255, "g": 0, "b": 255, "ms": 120 },
+        { "r": 0, "g": 255, "b": 255, "ms": 120 },
+        { "r": 255, "g": 255, "b": 0, "ms": 120 },
+        { "r": 255, "g": 0, "b": 128, "ms": 120 }
+      ]
+    }
+  ]
+}
